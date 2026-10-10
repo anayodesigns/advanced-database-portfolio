@@ -1,0 +1,26 @@
+=== pay_trip: 16 clients x 1250 transactions
+number of failed transactions: 0 (0.000%)
+latency average = 1.929 ms
+tps = 8292.527189 (without initial connection time)
+SUMMARY pay_trip           paid=12587  wall=2.45s  real payments/s=5127
+--- invariants:
+ total_money_in_all_wallets | total_of_ledger | wallets_not_matching_ledger | trips_paid_twice | negative_rider_wallets | stress_trips_paid 
+----------------------------+-----------------+-----------------------------+------------------+------------------------+-------------------
+              2084743190.00 |   2084743190.00 |                           0 |                0 |                      0 |             12587
+(1 row)
+
+
+=== pay_trip_deferred: 16 clients x 1250 transactions
+number of failed transactions: 0 (0.000%)
+latency average = 0.571 ms
+tps = 28030.676773 (without initial connection time)
+--- settlement job:
+platform balance after settle_platform(): 392009627.90
+SUMMARY pay_trip_deferred  paid=12647  wall=0.76s  real payments/s=16707
+--- invariants:
+ total_money_in_all_wallets | total_of_ledger | wallets_not_matching_ledger | trips_paid_twice | negative_rider_wallets | stress_trips_paid 
+----------------------------+-----------------+-----------------------------+------------------+------------------------+-------------------
+              2084743190.00 |   2084743190.00 |                           0 |                0 |                      0 |             12647
+(1 row)
+
+

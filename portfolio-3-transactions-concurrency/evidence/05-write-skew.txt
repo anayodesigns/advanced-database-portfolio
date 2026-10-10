@@ -1,0 +1,149 @@
+Driver 4999, requested trips 1020006 and 1020007
+=== Both dispatchers at READ COMMITTED
+    (t = seconds since start; A and B are separate database connections)
+
+t=  0.09s  A | BEGIN ISOLATION LEVEL READ COMMITTED;
+t=  0.09s  A | BEGIN
+t=  0.09s  A | -- check the rule
+t=  0.09s  A | SELECT count(*) AS active_trips_for_driver FROM swiftmove.trip WHERE driver_id = 4999 AND status IN ('accepted', 'in_progress');
+t=  0.13s  A |  active_trips_for_driver 
+t=  0.13s  A | -------------------------
+t=  0.13s  A |                        0
+t=  0.13s  A | (1 row)
+t=  0.13s  A | 
+t=  0.13s  A | SELECT pg_sleep(1.5) \g /dev/null
+t=  0.62s  B | BEGIN ISOLATION LEVEL READ COMMITTED;
+t=  0.62s  B | BEGIN
+t=  0.62s  B | -- check the rule
+t=  0.62s  B | SELECT count(*) AS active_trips_for_driver FROM swiftmove.trip WHERE driver_id = 4999 AND status IN ('accepted', 'in_progress');
+t=  0.62s  B |  active_trips_for_driver 
+t=  0.62s  B | -------------------------
+t=  0.62s  B |                        0
+t=  0.62s  B | (1 row)
+t=  0.62s  B | 
+t=  0.62s  B | SELECT pg_sleep(1.5) \g /dev/null
+t=  1.63s  A | -- rule looked fine, so assign the driver
+t=  1.63s  A | UPDATE swiftmove.trip SET driver_id = 4999, vehicle_id = 4999, status = 'accepted', accepted_at = now() WHERE trip_id = 1020006;
+t=  1.65s  A | UPDATE 1
+t=  1.65s  A | COMMIT;
+t=  1.65s  A | COMMIT
+t=  2.12s  B | -- rule looked fine, so assign the driver
+t=  2.12s  B | UPDATE swiftmove.trip SET driver_id = 4999, vehicle_id = 4999, status = 'accepted', accepted_at = now() WHERE trip_id = 1020007;
+t=  2.13s  B | UPDATE 1
+t=  2.13s  B | COMMIT;
+t=  2.13s  B | COMMIT
+
+RESULT  active trips for driver 4999 = 2   <-- RULE VIOLATED
+
+=== Both dispatchers at REPEATABLE READ
+    (t = seconds since start; A and B are separate database connections)
+
+t=  0.07s  A | BEGIN ISOLATION LEVEL REPEATABLE READ;
+t=  0.07s  A | BEGIN
+t=  0.07s  A | -- check the rule
+t=  0.07s  A | SELECT count(*) AS active_trips_for_driver FROM swiftmove.trip WHERE driver_id = 4999 AND status IN ('accepted', 'in_progress');
+t=  0.07s  A |  active_trips_for_driver 
+t=  0.07s  A | -------------------------
+t=  0.07s  A |                        0
+t=  0.07s  A | (1 row)
+t=  0.07s  A | 
+t=  0.07s  A | SELECT pg_sleep(1.5) \g /dev/null
+t=  0.60s  B | BEGIN ISOLATION LEVEL REPEATABLE READ;
+t=  0.60s  B | BEGIN
+t=  0.60s  B | -- check the rule
+t=  0.60s  B | SELECT count(*) AS active_trips_for_driver FROM swiftmove.trip WHERE driver_id = 4999 AND status IN ('accepted', 'in_progress');
+t=  0.60s  B |  active_trips_for_driver 
+t=  0.60s  B | -------------------------
+t=  0.60s  B |                        0
+t=  0.60s  B | (1 row)
+t=  0.60s  B | 
+t=  0.60s  B | SELECT pg_sleep(1.5) \g /dev/null
+t=  1.58s  A | -- rule looked fine, so assign the driver
+t=  1.58s  A | UPDATE swiftmove.trip SET driver_id = 4999, vehicle_id = 4999, status = 'accepted', accepted_at = now() WHERE trip_id = 1020006;
+t=  1.58s  A | UPDATE 1
+t=  1.58s  A | COMMIT;
+t=  1.58s  A | COMMIT
+t=  2.11s  B | -- rule looked fine, so assign the driver
+t=  2.11s  B | UPDATE swiftmove.trip SET driver_id = 4999, vehicle_id = 4999, status = 'accepted', accepted_at = now() WHERE trip_id = 1020007;
+t=  2.11s  B | UPDATE 1
+t=  2.11s  B | COMMIT;
+t=  2.11s  B | COMMIT
+
+RESULT  active trips for driver 4999 = 2   <-- RULE VIOLATED
+
+=== Both dispatchers at SERIALIZABLE
+    (t = seconds since start; A and B are separate database connections)
+
+t=  0.09s  A | BEGIN ISOLATION LEVEL SERIALIZABLE;
+t=  0.09s  A | BEGIN
+t=  0.09s  A | -- check the rule
+t=  0.09s  A | SELECT count(*) AS active_trips_for_driver FROM swiftmove.trip WHERE driver_id = 4999 AND status IN ('accepted', 'in_progress');
+t=  0.09s  A |  active_trips_for_driver 
+t=  0.09s  A | -------------------------
+t=  0.09s  A |                        0
+t=  0.09s  A | (1 row)
+t=  0.09s  A | 
+t=  0.09s  A | SELECT pg_sleep(1.5) \g /dev/null
+t=  0.62s  B | BEGIN ISOLATION LEVEL SERIALIZABLE;
+t=  0.62s  B | BEGIN
+t=  0.62s  B | -- check the rule
+t=  0.62s  B | SELECT count(*) AS active_trips_for_driver FROM swiftmove.trip WHERE driver_id = 4999 AND status IN ('accepted', 'in_progress');
+t=  0.62s  B |  active_trips_for_driver 
+t=  0.62s  B | -------------------------
+t=  0.62s  B |                        0
+t=  0.62s  B | (1 row)
+t=  0.62s  B | 
+t=  0.62s  B | SELECT pg_sleep(1.5) \g /dev/null
+t=  1.59s  A | -- rule looked fine, so assign the driver
+t=  1.59s  A | UPDATE swiftmove.trip SET driver_id = 4999, vehicle_id = 4999, status = 'accepted', accepted_at = now() WHERE trip_id = 1020006;
+t=  1.59s  A | UPDATE 1
+t=  1.59s  A | COMMIT;
+t=  1.59s  A | COMMIT
+t=  2.12s  B | -- rule looked fine, so assign the driver
+t=  2.12s  B | UPDATE swiftmove.trip SET driver_id = 4999, vehicle_id = 4999, status = 'accepted', accepted_at = now() WHERE trip_id = 1020007;
+t=  2.12s  B | psql:b.sql:6: ERROR:  could not serialize access due to read/write dependencies among transactions
+t=  2.12s  B | DETAIL:  Reason code: Canceled on identification as a pivot, during write.
+t=  2.12s  B | HINT:  The transaction might succeed if retried.
+t=  2.12s  B | COMMIT;
+t=  2.12s  B | ROLLBACK
+
+RESULT  active trips for driver 4999 = 1   (rule holds)
+
+CREATE INDEX
+=== READ COMMITTED + partial unique index uq_trip_one_active_per_driver
+    (t = seconds since start; A and B are separate database connections)
+
+t=  0.29s  A | BEGIN ISOLATION LEVEL READ COMMITTED;
+t=  0.29s  A | BEGIN
+t=  0.29s  A | -- check the rule
+t=  0.29s  A | SELECT count(*) AS active_trips_for_driver FROM swiftmove.trip WHERE driver_id = 4999 AND status IN ('accepted', 'in_progress');
+t=  0.30s  A |  active_trips_for_driver 
+t=  0.30s  A | -------------------------
+t=  0.30s  A |                        0
+t=  0.30s  A | (1 row)
+t=  0.30s  A | 
+t=  0.30s  A | SELECT pg_sleep(1.5) \g /dev/null
+t=  0.83s  B | BEGIN ISOLATION LEVEL READ COMMITTED;
+t=  0.83s  B | BEGIN
+t=  0.83s  B | -- check the rule
+t=  0.83s  B | SELECT count(*) AS active_trips_for_driver FROM swiftmove.trip WHERE driver_id = 4999 AND status IN ('accepted', 'in_progress');
+t=  0.83s  B |  active_trips_for_driver 
+t=  0.83s  B | -------------------------
+t=  0.83s  B |                        0
+t=  0.83s  B | (1 row)
+t=  0.83s  B | 
+t=  0.83s  B | SELECT pg_sleep(1.5) \g /dev/null
+t=  1.80s  A | -- rule looked fine, so assign the driver
+t=  1.80s  A | UPDATE swiftmove.trip SET driver_id = 4999, vehicle_id = 4999, status = 'accepted', accepted_at = now() WHERE trip_id = 1020006;
+t=  1.80s  A | UPDATE 1
+t=  1.80s  A | COMMIT;
+t=  1.80s  A | COMMIT
+t=  2.33s  B | -- rule looked fine, so assign the driver
+t=  2.33s  B | UPDATE swiftmove.trip SET driver_id = 4999, vehicle_id = 4999, status = 'accepted', accepted_at = now() WHERE trip_id = 1020007;
+t=  2.33s  B | psql:b.sql:6: ERROR:  duplicate key value violates unique constraint "uq_trip_one_active_per_driver"
+t=  2.33s  B | DETAIL:  Key (driver_id)=(4999) already exists.
+t=  2.33s  B | COMMIT;
+t=  2.33s  B | ROLLBACK
+
+RESULT  active trips for driver 4999 = 1   (rule holds)
+

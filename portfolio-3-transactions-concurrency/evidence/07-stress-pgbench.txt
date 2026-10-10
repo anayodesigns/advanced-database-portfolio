@@ -1,0 +1,63 @@
+=== Invariants BEFORE (1 client(s))
+ total_money_in_all_wallets | total_of_ledger | wallets_not_matching_ledger | trips_paid_twice | negative_rider_wallets | stress_trips_paid 
+----------------------------+-----------------+-----------------------------+------------------+------------------------+-------------------
+              2084743190.00 |   2084743190.00 |                           0 |                0 |                      0 |                 0
+(1 row)
+
+=== pgbench: 1 client(s) x 20000 transactions, READ COMMITTED, pay_trip() with ordered row locks
+number of transactions actually processed: 20000/20000
+number of failed transactions: 0 (0.000%)
+latency average = 0.147 ms
+tps = 6781.088494 (without initial connection time)
+=== Invariants AFTER (1 client(s))
+ total_money_in_all_wallets | total_of_ledger | wallets_not_matching_ledger | trips_paid_twice | negative_rider_wallets | stress_trips_paid 
+----------------------------+-----------------+-----------------------------+------------------+------------------------+-------------------
+              2084743190.00 |   2084743190.00 |                           0 |                0 |                      0 |             12677
+(1 row)
+
+SUMMARY clients=1   trips actually paid=12677  wall time=2.98s  real payments/s=4255
+
+=== Invariants BEFORE (4 client(s))
+ total_money_in_all_wallets | total_of_ledger | wallets_not_matching_ledger | trips_paid_twice | negative_rider_wallets | stress_trips_paid 
+----------------------------+-----------------+-----------------------------+------------------+------------------------+-------------------
+              2084743190.00 |   2084743190.00 |                           0 |                0 |                      0 |                 0
+(1 row)
+
+=== pgbench: 4 client(s) x 5000 transactions, READ COMMITTED, pay_trip() with ordered row locks
+number of transactions actually processed: 20000/20000
+number of failed transactions: 0 (0.000%)
+latency average = 0.415 ms
+tps = 9637.420949 (without initial connection time)
+=== Invariants AFTER (4 client(s))
+ total_money_in_all_wallets | total_of_ledger | wallets_not_matching_ledger | trips_paid_twice | negative_rider_wallets | stress_trips_paid 
+----------------------------+-----------------+-----------------------------+------------------+------------------------+-------------------
+              2084743190.00 |   2084743190.00 |                           0 |                0 |                      0 |             12583
+(1 row)
+
+SUMMARY clients=4   trips actually paid=12583  wall time=2.10s  real payments/s=5982
+
+=== Invariants BEFORE (16 client(s))
+ total_money_in_all_wallets | total_of_ledger | wallets_not_matching_ledger | trips_paid_twice | negative_rider_wallets | stress_trips_paid 
+----------------------------+-----------------+-----------------------------+------------------+------------------------+-------------------
+              2084743190.00 |   2084743190.00 |                           0 |                0 |                      0 |                 0
+(1 row)
+
+=== pgbench: 16 client(s) x 1250 transactions, READ COMMITTED, pay_trip() with ordered row locks
+number of transactions actually processed: 20000/20000
+number of failed transactions: 0 (0.000%)
+latency average = 1.750 ms
+tps = 9141.231571 (without initial connection time)
+=== Invariants AFTER (16 client(s))
+ total_money_in_all_wallets | total_of_ledger | wallets_not_matching_ledger | trips_paid_twice | negative_rider_wallets | stress_trips_paid 
+----------------------------+-----------------+-----------------------------+------------------+------------------------+-------------------
+              2084743190.00 |   2084743190.00 |                           0 |                0 |                      0 |             12587
+(1 row)
+
+SUMMARY clients=16  trips actually paid=12587  wall time=2.22s  real payments/s=5672
+
+=== Deadlocks / rollbacks recorded by PostgreSQL
+ deadlocks | xact_rollback 
+-----------+---------------
+         1 |             9
+(1 row)
+

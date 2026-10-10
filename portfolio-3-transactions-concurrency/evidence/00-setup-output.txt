@@ -1,0 +1,48 @@
+SET
+ setseed 
+---------
+ 
+(1 row)
+
+ cancelled_duplicate_trip | driver_id 
+--------------------------+-----------
+                   999603 |       933
+                   999422 |      1398
+                   999500 |      1417
+                   999684 |      1459
+                   999401 |      1619
+                   999606 |      1903
+                   999620 |      2648
+                   999477 |      3233
+                   999611 |      4579
+(9 rows)
+
+UPDATE 9
+CREATE FUNCTION
+CREATE FUNCTION
+ riders_topped_up 
+------------------
+               50
+(1 row)
+
+INSERT 0 20000
+CREATE TABLE
+TRUNCATE TABLE
+INSERT 0 1
+INSERT 0 1
+CREATE TABLE
+TRUNCATE TABLE
+INSERT 0 19999
+ANALYZE
+ANALYZE
+     name      | trip_id 
+---------------+---------
+ commit_demo   | 1000001
+ rollback_demo | 1020001
+(2 rows)
+
+ stress_trips 
+--------------
+        19999
+(1 row)
+

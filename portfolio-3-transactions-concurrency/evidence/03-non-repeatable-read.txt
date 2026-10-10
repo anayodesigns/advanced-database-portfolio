@@ -1,0 +1,66 @@
+=== Isolation level of A: READ COMMITTED
+    (t = seconds since start; A and B are separate database connections)
+
+t=  0.09s  A | -- A (finance report) reads the same balance twice inside one transaction
+t=  0.09s  A | BEGIN ISOLATION LEVEL READ COMMITTED;
+t=  0.10s  A | BEGIN
+t=  0.10s  A | SELECT balance AS first_read FROM swiftmove.wallet WHERE wallet_id = 49961;
+t=  0.10s  A |  first_read 
+t=  0.10s  A | ------------
+t=  0.10s  A |  4081400.00
+t=  0.10s  A | (1 row)
+t=  0.10s  A | 
+t=  0.10s  A | SELECT pg_sleep(2) \g /dev/null
+t=  0.76s  B | -- B (rider) tops up NGN 1,000 and commits while A is still running
+t=  0.76s  B | BEGIN;
+t=  0.76s  B | BEGIN
+t=  0.76s  B | SELECT swiftmove.topup(49960, 1000) AS new_balance;
+t=  0.78s  B |  new_balance 
+t=  0.78s  B | -------------
+t=  0.78s  B |   4082400.00
+t=  0.78s  B | (1 row)
+t=  0.78s  B | 
+t=  0.78s  B | COMMIT;
+t=  0.78s  B | COMMIT
+t=  2.10s  A | SELECT balance AS second_read FROM swiftmove.wallet WHERE wallet_id = 49961;
+t=  2.10s  A |  second_read 
+t=  2.10s  A | -------------
+t=  2.10s  A |   4082400.00
+t=  2.10s  A | (1 row)
+t=  2.10s  A | 
+t=  2.10s  A | COMMIT;
+t=  2.11s  A | COMMIT
+
+=== Isolation level of A: REPEATABLE READ
+    (t = seconds since start; A and B are separate database connections)
+
+t=  0.04s  A | -- A (finance report) reads the same balance twice inside one transaction
+t=  0.04s  A | BEGIN ISOLATION LEVEL REPEATABLE READ;
+t=  0.04s  A | BEGIN
+t=  0.04s  A | SELECT balance AS first_read FROM swiftmove.wallet WHERE wallet_id = 49961;
+t=  0.04s  A |  first_read 
+t=  0.04s  A | ------------
+t=  0.04s  A |  4082400.00
+t=  0.04s  A | (1 row)
+t=  0.04s  A | 
+t=  0.04s  A | SELECT pg_sleep(2) \g /dev/null
+t=  0.75s  B | -- B (rider) tops up NGN 1,000 and commits while A is still running
+t=  0.75s  B | BEGIN;
+t=  0.75s  B | BEGIN
+t=  0.75s  B | SELECT swiftmove.topup(49960, 1000) AS new_balance;
+t=  0.75s  B |  new_balance 
+t=  0.75s  B | -------------
+t=  0.75s  B |   4083400.00
+t=  0.75s  B | (1 row)
+t=  0.75s  B | 
+t=  0.75s  B | COMMIT;
+t=  0.75s  B | COMMIT
+t=  2.04s  A | SELECT balance AS second_read FROM swiftmove.wallet WHERE wallet_id = 49961;
+t=  2.04s  A |  second_read 
+t=  2.04s  A | -------------
+t=  2.04s  A |   4082400.00
+t=  2.04s  A | (1 row)
+t=  2.04s  A | 
+t=  2.04s  A | COMMIT;
+t=  2.04s  A | COMMIT
+

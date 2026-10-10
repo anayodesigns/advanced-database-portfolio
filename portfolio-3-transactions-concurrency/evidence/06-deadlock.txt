@@ -1,0 +1,69 @@
+=== Round 1 — A: 49981 -> 49982, B: 49982 -> 49981, each locks its source first (expect a deadlock)
+    (t = seconds since start; A and B are separate database connections)
+
+t=  0.02s  A | BEGIN;
+t=  0.02s  A | BEGIN
+t=  0.02s  A | -- (no up-front ordered lock)
+t=  0.02s  A | UPDATE swiftmove.wallet SET balance = balance - 500 WHERE wallet_id = 49981;
+t=  0.02s  A | UPDATE 1
+t=  0.02s  A | SELECT pg_sleep(1) \g /dev/null
+t=  0.34s  B | BEGIN;
+t=  0.34s  B | BEGIN
+t=  0.34s  B | -- (no up-front ordered lock)
+t=  0.34s  B | UPDATE swiftmove.wallet SET balance = balance - 500 WHERE wallet_id = 49982;
+t=  0.34s  B | UPDATE 1
+t=  0.34s  B | SELECT pg_sleep(1) \g /dev/null
+t=  1.03s  A | UPDATE swiftmove.wallet SET balance = balance + 500 WHERE wallet_id = 49982;
+t=  1.35s  B | UPDATE swiftmove.wallet SET balance = balance + 500 WHERE wallet_id = 49981;
+t=  2.03s  A | psql:a.sql:5: ERROR:  deadlock detected
+t=  2.03s  A | DETAIL:  Process 94430 waits for ShareLock on transaction 1035721; blocked by process 94433.
+t=  2.03s  A | Process 94433 waits for ShareLock on transaction 1035720; blocked by process 94430.
+t=  2.03s  A | HINT:  See server log for query details.
+t=  2.03s  A | CONTEXT:  while updating tuple (439,47) in relation "wallet"
+t=  2.03s  A | COMMIT;
+t=  2.03s  B | UPDATE 1
+t=  2.03s  B | COMMIT;
+t=  2.03s  A | ROLLBACK
+t=  2.03s  B | COMMIT
+
+=== Round 2 — both lock wallets in ascending wallet_id order first (B waits, no deadlock)
+    (t = seconds since start; A and B are separate database connections)
+
+t=  0.06s  A | BEGIN;
+t=  0.06s  A | BEGIN
+t=  0.06s  A | SELECT wallet_id FROM swiftmove.wallet WHERE wallet_id IN (49981, 49982) ORDER BY wallet_id FOR UPDATE;
+t=  0.06s  A |  wallet_id 
+t=  0.06s  A | -----------
+t=  0.06s  A |      49981
+t=  0.06s  A |      49982
+t=  0.06s  A | (2 rows)
+t=  0.06s  A | 
+t=  0.06s  A | UPDATE swiftmove.wallet SET balance = balance - 500 WHERE wallet_id = 49981;
+t=  0.06s  A | UPDATE 1
+t=  0.06s  A | SELECT pg_sleep(1) \g /dev/null
+t=  0.40s  B | BEGIN;
+t=  0.40s  B | BEGIN
+t=  0.40s  B | SELECT wallet_id FROM swiftmove.wallet WHERE wallet_id IN (49982, 49981) ORDER BY wallet_id FOR UPDATE;
+t=  1.07s  A | UPDATE swiftmove.wallet SET balance = balance + 500 WHERE wallet_id = 49982;
+t=  1.07s  A | UPDATE 1
+t=  1.07s  A | COMMIT;
+t=  1.07s  A | COMMIT
+t=  1.07s  B |  wallet_id 
+t=  1.07s  B | -----------
+t=  1.07s  B |      49981
+t=  1.07s  B |      49982
+t=  1.07s  B | (2 rows)
+t=  1.07s  B | 
+t=  1.07s  B | UPDATE swiftmove.wallet SET balance = balance - 500 WHERE wallet_id = 49982;
+t=  1.07s  B | UPDATE 1
+t=  1.07s  B | SELECT pg_sleep(1) \g /dev/null
+t=  2.08s  B | UPDATE swiftmove.wallet SET balance = balance + 500 WHERE wallet_id = 49981;
+t=  2.08s  B | UPDATE 1
+t=  2.08s  B | COMMIT;
+t=  2.08s  B | COMMIT
+
+ deadlocks 
+-----------
+         2
+(1 row)
+

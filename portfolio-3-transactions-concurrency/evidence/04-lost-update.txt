@@ -1,0 +1,155 @@
+=== Round 1 — ANOMALY: read-modify-write under READ COMMITTED (expect B's 500 debit to be lost)
+    (t = seconds since start; A and B are separate database connections)
+
+t=  0.03s  A | -- A: pay NGN 1,000 trip. Reads balance, "thinks" for 2 s, writes balance - 1000.
+t=  0.03s  A | BEGIN;
+t=  0.03s  A | BEGIN
+t=  0.03s  A | SELECT balance AS a_read FROM swiftmove.wallet WHERE wallet_id = 49971 \gset
+t=  0.03s  A | SELECT pg_sleep(2) \g /dev/null
+t=  0.76s  B | -- B: pay NGN 500 trip, same wallet, same pattern, finishes first.
+t=  0.76s  B | BEGIN;
+t=  0.76s  B | BEGIN
+t=  0.76s  B | SELECT balance AS b_read FROM swiftmove.wallet WHERE wallet_id = 49971 \gset
+t=  0.76s  B | UPDATE swiftmove.wallet SET balance = :b_read - 500 WHERE wallet_id = 49971;
+t=  0.76s  B | UPDATE 1
+t=  0.76s  B | INSERT INTO swiftmove.wallet_ledger (wallet_id, entry_type, amount) VALUES (49971, 'trip_debit', -500);
+t=  0.76s  B | INSERT 0 1
+t=  0.76s  B | COMMIT;
+t=  0.76s  B | COMMIT
+t=  2.03s  A | UPDATE swiftmove.wallet SET balance = :a_read - 1000 WHERE wallet_id = 49971;
+t=  2.03s  A | UPDATE 1
+t=  2.03s  A | INSERT INTO swiftmove.wallet_ledger (wallet_id, entry_type, amount) VALUES (49971, 'trip_debit', -1000);
+t=  2.05s  A | INSERT 0 1
+t=  2.05s  A | COMMIT;
+t=  2.05s  A | COMMIT
+
+RESULT  balance=4081400.00  ledger_sum=4080900.00  difference=500.00
+
+=== Fix 1 — atomic UPDATE balance = balance - x (B waits for A, nothing lost)
+    (t = seconds since start; A and B are separate database connections)
+
+t=  0.07s  A | BEGIN;
+t=  0.07s  A | BEGIN
+t=  0.07s  A | UPDATE swiftmove.wallet SET balance = balance - 1000 WHERE wallet_id = 49971 RETURNING balance AS a_new;
+t=  0.07s  A |    a_new    
+t=  0.07s  A | ------------
+t=  0.07s  A |  4079900.00
+t=  0.07s  A | (1 row)
+t=  0.07s  A | 
+t=  0.07s  A | UPDATE 1
+t=  0.07s  A | SELECT pg_sleep(2) \g /dev/null
+t=  0.81s  B | BEGIN;
+t=  0.81s  B | BEGIN
+t=  0.81s  B | -- B blocks here on A's row lock, then re-evaluates on the committed row (EvalPlanQual)
+t=  0.81s  B | UPDATE swiftmove.wallet SET balance = balance - 500 WHERE wallet_id = 49971 RETURNING balance AS b_new;
+t=  2.08s  A | INSERT INTO swiftmove.wallet_ledger (wallet_id, entry_type, amount) VALUES (49971, 'trip_debit', -1000);
+t=  2.08s  A | INSERT 0 1
+t=  2.08s  A | COMMIT;
+t=  2.08s  A | COMMIT
+t=  2.08s  B |    b_new    
+t=  2.08s  B | ------------
+t=  2.08s  B |  4079400.00
+t=  2.08s  B | (1 row)
+t=  2.08s  B | 
+t=  2.08s  B | UPDATE 1
+t=  2.08s  B | INSERT INTO swiftmove.wallet_ledger (wallet_id, entry_type, amount) VALUES (49971, 'trip_debit', -500);
+t=  2.08s  B | INSERT 0 1
+t=  2.08s  B | COMMIT;
+t=  2.08s  B | COMMIT
+
+RESULT  balance=4079400.00  ledger_sum=4079400.00  difference=0.00
+
+=== Fix 2 — SELECT ... FOR UPDATE (pessimistic row lock)
+    (t = seconds since start; A and B are separate database connections)
+
+t=  0.07s  A | BEGIN;
+t=  0.07s  A | BEGIN
+t=  0.07s  A | SELECT balance AS a_read FROM swiftmove.wallet WHERE wallet_id = 49971 FOR UPDATE \gset
+t=  0.07s  A | SELECT pg_sleep(2) \g /dev/null
+t=  0.80s  B | BEGIN;
+t=  0.80s  B | BEGIN
+t=  0.80s  B | -- B's SELECT ... FOR UPDATE waits until A commits, then reads A's result
+t=  0.80s  B | SELECT balance AS b_read FROM swiftmove.wallet WHERE wallet_id = 49971 FOR UPDATE \gset
+t=  2.07s  A | UPDATE swiftmove.wallet SET balance = :a_read - 1000 WHERE wallet_id = 49971;
+t=  2.07s  A | UPDATE 1
+t=  2.07s  A | INSERT INTO swiftmove.wallet_ledger (wallet_id, entry_type, amount) VALUES (49971, 'trip_debit', -1000);
+t=  2.07s  A | INSERT 0 1
+t=  2.07s  A | COMMIT;
+t=  2.07s  A | COMMIT
+t=  2.07s  B | \echo B read :b_read
+t=  2.07s  B | B read 4078400.00
+t=  2.07s  B | UPDATE swiftmove.wallet SET balance = :b_read - 500 WHERE wallet_id = 49971;
+t=  2.08s  B | UPDATE 1
+t=  2.08s  B | INSERT INTO swiftmove.wallet_ledger (wallet_id, entry_type, amount) VALUES (49971, 'trip_debit', -500);
+t=  2.08s  B | INSERT 0 1
+t=  2.08s  B | COMMIT;
+t=  2.08s  B | COMMIT
+
+RESULT  balance=4077900.00  ledger_sum=4077900.00  difference=0.00
+
+=== Fix 3 — REPEATABLE READ: A fails with SQLSTATE 40001 and must retry (nothing lost)
+    (t = seconds since start; A and B are separate database connections)
+
+t=  0.07s  A | BEGIN ISOLATION LEVEL REPEATABLE READ;
+t=  0.07s  A | BEGIN
+t=  0.07s  A | SELECT balance AS a_read FROM swiftmove.wallet WHERE wallet_id = 49971 \gset
+t=  0.07s  A | SELECT pg_sleep(2) \g /dev/null
+t=  0.81s  B | BEGIN ISOLATION LEVEL REPEATABLE READ;
+t=  0.81s  B | BEGIN
+t=  0.81s  B | SELECT balance AS b_read FROM swiftmove.wallet WHERE wallet_id = 49971 \gset
+t=  0.81s  B | UPDATE swiftmove.wallet SET balance = :b_read - 500 WHERE wallet_id = 49971;
+t=  0.81s  B | UPDATE 1
+t=  0.81s  B | INSERT INTO swiftmove.wallet_ledger (wallet_id, entry_type, amount) VALUES (49971, 'trip_debit', -500);
+t=  0.81s  B | INSERT 0 1
+t=  0.81s  B | COMMIT;
+t=  0.81s  B | COMMIT
+t=  2.08s  A | -- B changed this row after A's snapshot was taken -> serialization failure
+t=  2.08s  A | UPDATE swiftmove.wallet SET balance = :a_read - 1000 WHERE wallet_id = 49971;
+t=  2.08s  A | psql:a.sql:5: ERROR:  could not serialize access due to concurrent update
+t=  2.08s  A | INSERT INTO swiftmove.wallet_ledger (wallet_id, entry_type, amount) VALUES (49971, 'trip_debit', -1000);
+t=  2.08s  A | psql:a.sql:6: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+t=  2.08s  A | COMMIT;
+t=  2.08s  A | ROLLBACK
+
+RESULT  balance=4077400.00  ledger_sum=4077400.00  difference=0.00
+
+=== Fix 4 — optimistic locking (version column, no locks held while the app thinks)
+    (t = seconds since start; A and B are separate database connections)
+
+t=  0.06s  A | BEGIN;
+t=  0.06s  A | BEGIN
+t=  0.06s  A | SELECT balance AS a_read, version AS a_ver FROM swiftmove.wallet WHERE wallet_id = 49971 \gset
+t=  0.06s  A | SELECT pg_sleep(2) \g /dev/null
+t=  0.80s  B | BEGIN;
+t=  0.80s  B | BEGIN
+t=  0.80s  B | SELECT balance AS b_read, version AS b_ver FROM swiftmove.wallet WHERE wallet_id = 49971 \gset
+t=  0.80s  B | UPDATE swiftmove.wallet SET balance = :b_read - 500, version = version + 1 WHERE wallet_id = 49971 AND version = :b_ver;
+t=  0.80s  B | UPDATE 1
+t=  0.80s  B | \echo B: rows updated = :ROW_COUNT
+t=  0.80s  B | B: rows updated = 1
+t=  0.80s  B | INSERT INTO swiftmove.wallet_ledger (wallet_id, entry_type, amount) VALUES (49971, 'trip_debit', -500);
+t=  0.80s  B | INSERT 0 1
+t=  0.80s  B | COMMIT;
+t=  0.81s  B | COMMIT
+t=  2.07s  A | -- Only succeeds if nobody changed the row since A read it
+t=  2.07s  A | UPDATE swiftmove.wallet SET balance = :a_read - 1000, version = version + 1 WHERE wallet_id = 49971 AND version = :a_ver;
+t=  2.07s  A | UPDATE 0
+t=  2.07s  A | \echo A: rows updated = :ROW_COUNT  (0 means conflict -> rollback and retry)
+t=  2.07s  A | A: rows updated = 0 (0 means conflict -> rollback and retry)
+t=  2.07s  A | ROLLBACK;
+t=  2.07s  A | ROLLBACK
+t=  2.07s  A | -- Retry with fresh data:
+t=  2.07s  A | BEGIN;
+t=  2.07s  A | BEGIN
+t=  2.07s  A | SELECT balance AS a_read, version AS a_ver FROM swiftmove.wallet WHERE wallet_id = 49971 \gset
+t=  2.07s  A | UPDATE swiftmove.wallet SET balance = :a_read - 1000, version = version + 1 WHERE wallet_id = 49971 AND version = :a_ver;
+t=  2.07s  A | UPDATE 1
+t=  2.07s  A | \echo A retry: rows updated = :ROW_COUNT
+t=  2.07s  A | A retry: rows updated = 1
+t=  2.07s  A | INSERT INTO swiftmove.wallet_ledger (wallet_id, entry_type, amount) VALUES (49971, 'trip_debit', -1000);
+t=  2.07s  A | INSERT 0 1
+t=  2.07s  A | COMMIT;
+t=  2.07s  A | COMMIT
+
+RESULT  balance=4075900.00  ledger_sum=4075900.00  difference=0.00
+

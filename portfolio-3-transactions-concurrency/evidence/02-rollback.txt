@@ -1,0 +1,68 @@
+SET
+=== 2a. Automatic rollback: the rider cannot afford the trip (fare = balance + 2,500)
+ trip_id | rider_id | fare_amount | rider_balance 
+---------+----------+-------------+---------------
+ 1020001 |    41001 |    22500.00 |      20000.00
+(1 row)
+
+ payments_before | ledger_rows_before 
+-----------------+--------------------
+          929509 |            1526653
+(1 row)
+
+BEGIN
+psql:demos/02_rollback.sql:10: ERROR:  new row for relation "wallet" violates check constraint "ck_wallet_balance"
+DETAIL:  Failing row contains (41002, rider, 41001, null, NGN, -2500.00, 1, 2026-10-10 16:43:15.213023+01).
+CONTEXT:  SQL statement "UPDATE wallet SET balance = balance - t.fare_amount, version = version + 1, updated_at = now() WHERE wallet_id = v_rider_w"
+PL/pgSQL function pay_trip(bigint) line 42 at SQL statement
+psql:demos/02_rollback.sql:12: ERROR:  current transaction is aborted, commands ignored until end of transaction block
+ROLLBACK
+ payments_after | ledger_rows_after | rider_balance_after 
+----------------+-------------------+---------------------
+         929509 |           1526653 |            20000.00
+(1 row)
+
+    -> The payment row inserted before the failing UPDATE was rolled back too (atomicity).
+=== 2b. Explicit ROLLBACK: a support agent marks the wrong trips payment as refunded, notices, and undoespsql:demos/02_rollback.sql:18: error: unterminated quoted string
+
+BEGIN
+ payment_id | trip_id |  status  
+------------+---------+----------
+      18073 |     100 | refunded
+(1 row)
+
+UPDATE 1
+  status  
+----------
+ refunded
+(1 row)
+
+ROLLBACK
+ status_after_rollback 
+-----------------------
+ succeeded
+(1 row)
+
+=== 2c. SAVEPOINT: partial rollback. Close out a trip; the optional loyalty bonus fails, the rest commits.
+BEGIN
+ trip_id |  status   | fare_amount 
+---------+-----------+-------------
+  999421 | completed |     2210.00
+(1 row)
+
+UPDATE 1
+SAVEPOINT
+psql:demos/02_rollback.sql:32: ERROR:  duplicate key value violates unique constraint "rating_pkey"
+DETAIL:  Key (trip_id, direction)=(1, rider_to_driver) already exists.
+ROLLBACK
+                         note                         
+------------------------------------------------------
+ transaction still usable after ROLLBACK TO SAVEPOINT
+(1 row)
+
+COMMIT
+ trip_id |  status   | fare_amount 
+---------+-----------+-------------
+  999421 | completed |     2210.00
+(1 row)
+

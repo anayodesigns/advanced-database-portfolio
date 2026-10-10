@@ -1,0 +1,4 @@
+-- pgbench script: one wallet payment for a random unpaid demo trip.
+-- Random picks collide on purpose: the same trip (and the same 50 rider wallets) are hit concurrently.
+\set n random(1, 19999)
+SELECT swiftmove.pay_trip(trip_id) FROM swiftmove.stress_trip WHERE n = :n;
