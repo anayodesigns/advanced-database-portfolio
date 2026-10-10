@@ -1,0 +1,86 @@
+erDiagram
+    CITY ||--|{ ZONE : "is divided into"
+    CITY ||--o{ RIDER : "is home of"
+    CITY ||--o{ DRIVER : "licenses"
+    DRIVER ||--|{ VEHICLE : "owns"
+    SERVICE_CATEGORY ||--o{ VEHICLE : "classifies"
+    SERVICE_CATEGORY ||--o{ TRIP : "prices"
+    RIDER ||--o{ TRIP : "requests"
+    DRIVER |o--o{ TRIP : "serves"
+    VEHICLE |o--o{ TRIP : "is used for"
+    ZONE ||--o{ TRIP : "pickup in"
+    ZONE ||--o{ TRIP : "dropoff in"
+    TRIP ||--o| PARCEL : "carries"
+    TRIP ||--|{ TRIP_STATUS_EVENT : "has history"
+    TRIP ||--o{ RATING : "receives (max 2)"
+    TRIP ||--o{ PAYMENT : "is paid by"
+    RIDER ||--|| WALLET : "has"
+    DRIVER ||--|| WALLET : "has"
+    WALLET ||--o{ WALLET_LEDGER : "records"
+    PAYMENT ||--o{ WALLET_LEDGER : "generates"
+
+    CITY { smallint city_id PK
+           varchar name
+           varchar state }
+    ZONE { int zone_id PK
+           smallint city_id FK
+           varchar name
+           numeric centre_lat
+           numeric centre_lng }
+    SERVICE_CATEGORY { varchar category_code PK
+           numeric base_fare
+           numeric per_km
+           numeric per_minute
+           numeric minimum_fare
+           numeric commission_rate }
+    RIDER { bigint rider_id PK
+           varchar email UK
+           varchar phone UK
+           smallint home_city_id FK
+           varchar status }
+    DRIVER { bigint driver_id PK
+           varchar email UK
+           varchar licence_no UK
+           smallint city_id FK
+           varchar status }
+    VEHICLE { bigint vehicle_id PK
+           bigint driver_id FK
+           varchar category_code FK
+           varchar plate_no UK
+           boolean is_active }
+    TRIP { bigint trip_id PK
+           bigint rider_id FK
+           bigint driver_id FK "nullable until matched"
+           bigint vehicle_id FK
+           varchar category_code FK
+           int pickup_zone_id FK
+           int dropoff_zone_id FK
+           varchar status
+           timestamptz requested_at
+           numeric fare_amount }
+    PARCEL { bigint trip_id PK,FK
+           varchar recipient_phone
+           char size_class }
+    TRIP_STATUS_EVENT { bigint trip_id PK,FK
+           smallint seq PK
+           varchar status
+           timestamptz changed_at }
+    RATING { bigint trip_id PK,FK
+           varchar direction PK
+           smallint score }
+    WALLET { bigint wallet_id PK
+           varchar owner_kind
+           bigint rider_id FK,UK
+           bigint driver_id FK,UK
+           numeric balance
+           int version }
+    PAYMENT { bigint payment_id PK
+           bigint trip_id FK
+           varchar method
+           numeric amount
+           varchar status }
+    WALLET_LEDGER { bigint entry_id PK
+           bigint wallet_id FK
+           bigint payment_id FK
+           varchar entry_type
+           numeric amount }

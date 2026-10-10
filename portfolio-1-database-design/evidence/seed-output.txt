@@ -1,0 +1,50 @@
+psql:portfolio-1-database-design/schema.sql:7: NOTICE:  drop cascades to 14 other objects
+DETAIL:  drop cascades to table swiftmove.city
+drop cascades to table swiftmove.zone
+drop cascades to table swiftmove.service_category
+drop cascades to table swiftmove.rider
+drop cascades to table swiftmove.driver
+drop cascades to table swiftmove.vehicle
+drop cascades to table swiftmove.trip
+drop cascades to table swiftmove.parcel
+drop cascades to table swiftmove.trip_status_event
+drop cascades to table swiftmove.rating
+drop cascades to table swiftmove.wallet
+drop cascades to table swiftmove.payment
+drop cascades to table swiftmove.wallet_ledger
+drop cascades to view swiftmove.driver_rating
+ setseed 
+---------
+ 
+(1 row)
+ setval 
+--------
+   5000
+(1 row)
+ setval  
+---------
+ 1000000
+(1 row)
+ setval 
+--------
+  50000
+(1 row)
+ setval 
+--------
+   5000
+(1 row)
+    table_name     |  count  
+-------------------+---------
+ city              |       5
+ zone              |      60
+ rider             |   50000
+ driver            |    5000
+ vehicle           |    5300
+ trip              | 1000000
+ parcel            |  150363
+ trip_status_event | 3847631
+ rating            |  988933
+ wallet            |   55001
+ payment           |  916917
+ wallet_ledger     | 1488816
+(12 rows)

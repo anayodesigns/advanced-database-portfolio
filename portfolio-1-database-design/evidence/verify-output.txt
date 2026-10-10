@@ -1,0 +1,56 @@
+SET
+1. Ledger matches wallet balances (rows where they differ):
+ mismatched_wallets 
+--------------------
+                  0
+
+2. Wallet payments conserve money (debit + credits per payment should sum to 0):
+ unbalanced_payments 
+---------------------
+                   0
+
+3. Trips whose driver works in a different city from the pickup zone:
+ cross_city_trips 
+------------------
+                0
+
+4. Trips served by a vehicle in the wrong category:
+ wrong_category 
+----------------
+              0
+
+5. Every completed trip has exactly one successful payment:
+ completed_without_payment 
+---------------------------
+                         0
+
+6. Constraint test: a rider wallet cannot go negative (expect an error):
+psql:portfolio-1-database-design/verify.sql:31: ERROR:  new row for relation "wallet" violates check constraint "ck_wallet_balance"
+DETAIL:  Failing row contains (2, rider, 1, null, NGN, -1.00, 0, 2026-10-10 15:50:15.4485+01).
+7. Constraint test: a completed trip needs a fare (expect an error):
+psql:portfolio-1-database-design/verify.sql:33: ERROR:  new row for relation "trip" violates check constraint "ck_trip_completed"
+DETAIL:  Failing row contains (999402, ride, 12842, null, null, COMFORT, 120, 119, 6.557833, 3.355458, 6.460577, 3.638609, completed, 2026-10-10 00:46:02.137057+01, null, null, null, null, null, null, null).
+8. Constraint test: invalid phone format (expect an error):
+psql:portfolio-1-database-design/verify.sql:35: ERROR:  new row for relation "rider" violates check constraint "ck_rider_phone"
+DETAIL:  Failing row contains (50001, Test User, test@x.example, 08012345678, 1, active, 2026-10-10 16:30:53.00324+01).
+--- Data profile ---
+   status    | count  | pct  
+-------------+--------+------
+ completed   | 898933 | 89.9
+ cancelled   | 100467 | 10.0
+ requested   |    309 |  0.0
+ in_progress |    157 |  0.0
+ accepted    |    134 |  0.0
+
+     city      | trips  | avg_fare_ngn 
+---------------+--------+--------------
+ Lagos         | 500335 |         3574
+ Abuja         | 199893 |         3568
+ Port Harcourt | 120276 |         3554
+ Ibadan        | 100015 |         3565
+ Kano          |  79481 |         3566
+
+ database_size 
+---------------
+ 1068 MB
+
