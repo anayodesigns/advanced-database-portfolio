@@ -2,6 +2,8 @@
 
 **Student:** Obiianayo Anayo · **Session:** 2026/2027, First Semester · **Assessment:** Individual Practical Database Portfolio (40 marks)
 
+**Repository (private):** https://github.com/anayodesigns/advanced-database-portfolio
+
 ## Selected case study: SwiftMove
 
 **SwiftMove Technologies Ltd** is a *simulated* ride-hailing and on-demand parcel-delivery platform operating in **Lagos, Abuja, Port Harcourt, Ibadan and Kano**.
