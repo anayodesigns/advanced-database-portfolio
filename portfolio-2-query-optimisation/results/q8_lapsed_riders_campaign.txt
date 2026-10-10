@@ -1,0 +1,29 @@
+ rider_id |     full_name      | balance  
+----------+--------------------+----------
+    27473 | Olumide Ezeh       | 20000.00
+    28176 | Ebuka Obi          | 20000.00
+    29430 | Kemi Okafor        | 20000.00
+    29658 | Aisha Aliyu        | 20000.00
+    29886 | Ngozi Obi          | 20000.00
+    30589 | Emeka Mohammed     | 20000.00
+    30931 | Seun Danjuma       | 20000.00
+    32014 | Yetunde Ojo        | 20000.00
+    32052 | Funmilayo Ogunleye | 20000.00
+    32489 | Bashir Adebayo     | 20000.00
+    32508 | Temitope Aliyu     | 20000.00
+    32736 | Ebuka Obi          | 20000.00
+    33078 | Nkechi Aliyu       | 20000.00
+    33116 | Bola Nwosu         | 20000.00
+    33705 | Uche Nnamdi        | 20000.00
+    33781 | Ikenna Danjuma     | 20000.00
+    33952 | Damilola Usman     | 20000.00
+    34009 | Bashir Mohammed    | 20000.00
+    34123 | Kelechi Lawal      | 20000.00
+    34256 | Ebuka Nwosu        | 20000.00
+    34921 | Ibrahim Danjuma    | 20000.00
+    34883 | Kelechi Ezeh       | 20000.00
+    34750 | Kemi Ibrahim       | 20000.00
+    34693 | Segun Lawal        | 20000.00
+    34484 | Fatima Bello       | 20000.00
+(25 rows)
+

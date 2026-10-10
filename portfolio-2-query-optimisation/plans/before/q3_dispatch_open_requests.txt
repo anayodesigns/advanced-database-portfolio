@@ -1,0 +1,21 @@
+-- Q3 Dispatch/matching service (runs every few seconds): open requests in one zone, oldest first.
+-- mode: before, run 5 of 5 (warm cache), 2026-10-10 16:33:29 WAT
+
+Gather Merge  (cost=31070.05..31070.75 rows=6 width=47) (actual time=28.783..29.939 rows=2 loops=1)
+  Workers Planned: 2
+  Workers Launched: 2
+  Buffers: shared hit=16000 read=7894
+  ->  Sort  (cost=30070.02..30070.03 rows=3 width=47) (actual time=27.727..27.727 rows=1 loops=3)
+        Sort Key: requested_at
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=16000 read=7894
+        Worker 0:  Sort Method: quicksort  Memory: 25kB
+        Worker 1:  Sort Method: quicksort  Memory: 25kB
+        ->  Parallel Seq Scan on trip  (cost=0.00..30070.00 rows=3 width=47) (actual time=27.696..27.702 rows=1 loops=3)
+              Filter: (((status)::text = 'requested'::text) AND (pickup_zone_id = 105))
+              Rows Removed by Filter: 333333
+              Buffers: shared hit=15926 read=7894
+Planning:
+  Buffers: shared hit=106
+Planning Time: 0.167 ms
+Execution Time: 29.961 ms

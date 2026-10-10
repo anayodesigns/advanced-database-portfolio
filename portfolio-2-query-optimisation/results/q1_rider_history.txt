@@ -1,0 +1,24 @@
+ trip_id |         requested_at          |   status    | category_code |  pickup   |  dropoff  | fare_amount 
+---------+-------------------------------+-------------+---------------+-----------+-----------+-------------
+  999671 | 2026-10-10 03:07:15.877864+01 | in_progress | ECONOMY       | Garki     | Garki     |            
+  998698 | 2026-10-09 18:35:52.086432+01 | completed   | COMFORT       | Lugbe     | Lugbe     |     3540.00
+  998494 | 2026-10-09 16:48:47.766501+01 | completed   | BIKE          | Life Camp | Lugbe     |      600.00
+  998138 | 2026-10-09 13:41:45.210361+01 | completed   | BIKE          | Garki     | Gwarinpa  |     2900.00
+  996405 | 2026-10-08 22:30:35.661522+01 | cancelled   | ECONOMY       | Life Camp | Jabi      |            
+  996047 | 2026-10-08 19:22:22.491284+01 | completed   | ECONOMY       | Gwarinpa  | Gwarinpa  |     2380.00
+  995637 | 2026-10-08 15:46:51.404892+01 | completed   | COMFORT       | Kubwa     | Wuse 2    |     2710.00
+  995133 | 2026-10-08 11:22:14.4665+01   | completed   | BIKE          | Maitama   | Garki     |      740.00
+  994377 | 2026-10-08 04:45:01.889508+01 | completed   | ECONOMY       | Life Camp | Wuse 2    |     1330.00
+  994147 | 2026-10-08 02:43:45.361161+01 | completed   | ECONOMY       | Jabi      | Maitama   |     5430.00
+  993859 | 2026-10-08 00:12:42.018377+01 | completed   | COMFORT       | Jabi      | Jabi      |     4410.00
+  993565 | 2026-10-07 21:37:56.080446+01 | completed   | ECONOMY       | Garki     | Gwarinpa  |     2800.00
+  993415 | 2026-10-07 20:18:58.977761+01 | completed   | COMFORT       | Lugbe     | Kubwa     |     9220.00
+  991693 | 2026-10-07 05:14:01.288287+01 | completed   | VAN           | Gwarinpa  | Kubwa     |     4900.00
+  990983 | 2026-10-06 23:01:05.093765+01 | completed   | BIKE          | Maitama   | Wuse 2    |     1360.00
+  989459 | 2026-10-06 09:40:05.911073+01 | completed   | ECONOMY       | Life Camp | Kubwa     |     5380.00
+  989040 | 2026-10-06 05:59:30.156901+01 | cancelled   | VAN           | Wuse 2    | Life Camp |            
+  986147 | 2026-10-05 04:39:11.912819+01 | cancelled   | BIKE          | Lugbe     | Jabi      |            
+  985313 | 2026-10-04 21:20:38.354918+01 | completed   | COMFORT       | Jabi      | Maitama   |     2730.00
+  985249 | 2026-10-04 20:47:05.725477+01 | cancelled   | ECONOMY       | Utako     | Maitama   |            
+(20 rows)
+

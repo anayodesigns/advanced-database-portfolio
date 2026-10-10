@@ -1,0 +1,11 @@
+-- Q6 Support desk: find a rider by email typed in any case.
+-- mode: before, run 5 of 5 (warm cache), 2026-10-10 16:33:32 WAT
+
+Seq Scan on rider  (cost=0.00..1476.00 rows=250 width=74) (actual time=1.788..4.729 rows=1 loops=1)
+  Filter: (lower((email)::text) = 'musa.afolabi10007@mail.example'::text)
+  Rows Removed by Filter: 49999
+  Buffers: shared hit=726
+Planning:
+  Buffers: shared hit=101
+Planning Time: 0.183 ms
+Execution Time: 4.737 ms

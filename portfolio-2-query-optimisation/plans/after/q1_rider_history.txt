@@ -1,0 +1,32 @@
+-- Q1 Rider app: "My trips" screen – a heavy user's 20 most recent trips with zone names.
+-- mode: after, run 5 of 5 (warm cache), 2026-10-10 16:35:00 WAT
+
+Limit  (cost=0.72..81.68 rows=20 width=54) (actual time=0.022..0.076 rows=20 loops=1)
+  Buffers: shared hit=61
+  ->  Nested Loop  (cost=0.72..3238.97 rows=800 width=54) (actual time=0.021..0.075 rows=20 loops=1)
+        Buffers: shared hit=61
+        ->  Nested Loop  (cost=0.57..3208.69 rows=800 width=50) (actual time=0.018..0.065 rows=20 loops=1)
+              Buffers: shared hit=45
+              ->  Index Scan using ix_trip_rider_requested on trip t  (cost=0.42..3178.40 rows=800 width=46) (actual time=0.010..0.049 rows=20 loops=1)
+                    Index Cond: (rider_id = 25001)
+                    Buffers: shared hit=27
+              ->  Memoize  (cost=0.15..0.18 rows=1 width=12) (actual time=0.001..0.001 rows=1 loops=20)
+                    Cache Key: t.pickup_zone_id
+                    Cache Mode: logical
+                    Hits: 11  Misses: 9  Evictions: 0  Overflows: 0  Memory Usage: 1kB
+                    Buffers: shared hit=18
+                    ->  Index Scan using zone_pkey on zone pz  (cost=0.14..0.17 rows=1 width=12) (actual time=0.000..0.000 rows=1 loops=9)
+                          Index Cond: (zone_id = t.pickup_zone_id)
+                          Buffers: shared hit=18
+        ->  Memoize  (cost=0.15..0.18 rows=1 width=12) (actual time=0.000..0.000 rows=1 loops=20)
+              Cache Key: t.dropoff_zone_id
+              Cache Mode: logical
+              Hits: 12  Misses: 8  Evictions: 0  Overflows: 0  Memory Usage: 1kB
+              Buffers: shared hit=16
+              ->  Index Scan using zone_pkey on zone dz  (cost=0.14..0.17 rows=1 width=12) (actual time=0.001..0.001 rows=1 loops=8)
+                    Index Cond: (zone_id = t.dropoff_zone_id)
+                    Buffers: shared hit=16
+Planning:
+  Buffers: shared hit=365
+Planning Time: 0.750 ms
+Execution Time: 0.108 ms

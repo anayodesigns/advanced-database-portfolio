@@ -1,0 +1,43 @@
+SET
+Timing is on.
+CREATE INDEX
+Time: 1245.973 ms (00:01.246)
+CREATE INDEX
+Time: 2224.197 ms (00:02.224)
+CREATE INDEX
+Time: 492.514 ms
+CREATE INDEX
+Time: 516.724 ms
+CREATE INDEX
+Time: 47.089 ms
+CREATE INDEX
+Time: 369.469 ms
+CREATE INDEX
+Time: 354.001 ms
+SELECT 65
+Time: 497.199 ms
+CREATE INDEX
+Time: 0.836 ms
+VACUUM
+Time: 150.798 ms
+VACUUM
+Time: 46.267 ms
+ANALYZE
+Time: 48.029 ms
+Timing is off.
+          index           | table_name |  size   
+--------------------------+------------+---------
+ rating_pkey              | rating     | 49 MB
+ ix_trip_driver_completed | trip       | 35 MB
+ ix_trip_rider_requested  | trip       | 30 MB
+ ix_rating_recent_r2d     | rating     | 24 MB
+ trip_pkey                | trip       | 21 MB
+ ix_trip_driver           | trip       | 6936 kB
+ uq_rider_email           | rider      | 3512 kB
+ ix_rider_email_lower     | rider      | 2584 kB
+ uq_rider_phone           | rider      | 2344 kB
+ rider_pkey               | rider      | 1192 kB
+ ix_trip_requested_brin   | trip       | 40 kB
+ ix_trip_open_requests    | trip       | 32 kB
+(12 rows)
+

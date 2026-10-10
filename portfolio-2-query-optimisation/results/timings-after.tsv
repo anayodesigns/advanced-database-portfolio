@@ -1,0 +1,10 @@
+q1_rider_history	0.108	0.228,0.106,0.104,0.111,0.108
+q2_driver_earnings	0.158	1.319,5.544,0.090,0.130,0.158
+q3_dispatch_open_requests	0.017	1.008,0.032,0.017,0.016,0.017
+q4_city_monthly_revenue	403.224	446.287,403.492,384.681,396.754,403.224
+q5_top_rated_drivers	42.875	42.875,42.625,43.638,43.556,41.615
+q6_support_email_lookup	0.015	0.660,0.015,0.014,0.015,0.015
+q7_hourly_demand_one_day	1.092	1.092,1.076,1.079,1.094,1.111
+q8_lapsed_riders_campaign	9.625	71.999,25.486,7.276,7.922,9.625
+q4b_city_monthly_revenue_mv	0.041	0.042,0.041,0.039,0.041,0.042
+q5b_top_rated_drivers_window	15.416	15.416,15.318,15.535,15.405,18.644

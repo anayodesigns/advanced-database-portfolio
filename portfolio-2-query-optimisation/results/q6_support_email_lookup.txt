@@ -1,0 +1,5 @@
+ rider_id |  full_name   |             email              |     phone      | status 
+----------+--------------+--------------------------------+----------------+--------
+    10007 | Musa Afolabi | musa.afolabi10007@mail.example | +2348000010007 | active
+(1 row)
+

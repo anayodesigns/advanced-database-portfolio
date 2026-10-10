@@ -1,0 +1,14 @@
+ driver_id |    full_name     | ratings | avg_score 
+-----------+------------------+---------+-----------
+      1599 | Abubakar Okonkwo |      21 |      4.95
+        69 | Kunle Okonkwo    |      20 |      4.95
+       249 | Femi Okonkwo     |      23 |      4.91
+       639 | Abubakar Okonkwo |      22 |      4.91
+      1619 | Musa Danjuma     |      21 |      4.90
+       729 | Femi Okonkwo     |      20 |      4.90
+      2239 | Abubakar Umeh    |      20 |      4.90
+      2029 | Kunle Umeh       |      23 |      4.87
+       819 | Musa Okonkwo     |      22 |      4.86
+       319 | Abubakar Umeh    |      21 |      4.86
+(10 rows)
+

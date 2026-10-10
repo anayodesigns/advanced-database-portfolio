@@ -1,0 +1,10 @@
+-- Q3 Dispatch/matching service (runs every few seconds): open requests in one zone, oldest first.
+-- mode: after, run 5 of 5 (warm cache), 2026-10-10 16:35:00 WAT
+
+Index Scan using ix_trip_open_requests on trip  (cost=0.27..32.39 rows=7 width=47) (actual time=0.006..0.008 rows=2 loops=1)
+  Index Cond: (pickup_zone_id = 105)
+  Buffers: shared hit=4
+Planning:
+  Buffers: shared hit=203
+Planning Time: 0.349 ms
+Execution Time: 0.017 ms

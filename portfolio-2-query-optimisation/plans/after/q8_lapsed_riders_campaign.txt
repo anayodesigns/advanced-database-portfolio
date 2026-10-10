@@ -1,0 +1,35 @@
+-- Q8 Marketing: Abuja riders with >= NGN 15,000 in their wallet who have not travelled in 60 days.
+-- mode: after, run 5 of 5 (warm cache), 2026-10-10 16:35:04 WAT
+
+Limit  (cost=3263.57..3739.61 rows=25 width=27) (actual time=6.066..9.600 rows=25 loops=1)
+  Buffers: shared hit=7460 read=33
+  ->  Nested Loop Anti Join  (cost=3263.57..19848.77 rows=871 width=27) (actual time=6.066..9.598 rows=25 loops=1)
+        Buffers: shared hit=7460 read=33
+        ->  Nested Loop  (cost=3263.14..15611.27 rows=4159 width=27) (actual time=4.776..7.492 rows=371 loops=1)
+              Buffers: shared hit=6372 read=7
+              ->  Gather Merge  (cost=3262.85..5627.52 rows=20748 width=14) (actual time=3.913..5.144 rows=6772 loops=1)
+                    Workers Planned: 1
+                    Workers Launched: 1
+                    Buffers: shared hit=1066
+                    ->  Sort  (cost=2262.84..2293.36 rows=12205 width=14) (actual time=3.037..3.115 rows=4098 loops=2)
+                          Sort Key: w.balance DESC
+                          Sort Method: quicksort  Memory: 766kB
+                          Buffers: shared hit=1066
+                          Worker 0:  Sort Method: quicksort  Memory: 433kB
+                          ->  Parallel Seq Scan on wallet w  (cost=0.00..1434.42 rows=12205 width=14) (actual time=0.215..1.967 rows=10394 loops=2)
+                                Filter: (balance >= '15000'::numeric)
+                                Rows Removed by Filter: 17107
+                                Buffers: shared hit=1030
+              ->  Index Scan using rider_pkey on rider r  (cost=0.29..0.48 rows=1 width=21) (actual time=0.000..0.000 rows=0 loops=6772)
+                    Index Cond: (rider_id = w.rider_id)
+                    Filter: ((home_city_id = 2) AND ((status)::text = 'active'::text))
+                    Rows Removed by Filter: 0
+                    Buffers: shared hit=5306 read=7
+        ->  Index Only Scan using ix_trip_rider_requested on trip t  (cost=0.42..2.04 rows=4 width=8) (actual time=0.006..0.006 rows=1 loops=371)
+              Index Cond: ((rider_id = r.rider_id) AND (requested_at >= '2026-08-11 00:00:00+01'::timestamp with time zone))
+              Heap Fetches: 0
+              Buffers: shared hit=1088 read=26
+Planning:
+  Buffers: shared hit=462
+Planning Time: 0.793 ms
+Execution Time: 9.625 ms

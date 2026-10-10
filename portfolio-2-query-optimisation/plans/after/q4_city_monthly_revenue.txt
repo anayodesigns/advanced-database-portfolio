@@ -1,0 +1,42 @@
+-- Q4 Finance dashboard: revenue and commission per city per month (last 6 months).
+-- mode: after, run 5 of 5 (warm cache), 2026-10-10 16:35:02 WAT
+
+GroupAggregate  (cost=94891.91..110708.81 rows=421784 width=87) (actual time=309.395..402.403 rows=35 loops=1)
+  Group Key: c.name, (date_trunc('month'::text, t.completed_at))
+  Buffers: shared hit=14027 read=9802, temp read=2144 written=2152
+  ->  Sort  (cost=94891.91..95946.37 rows=421784 width=25) (actual time=306.472..344.638 rows=473220 loops=1)
+        Sort Key: c.name, (date_trunc('month'::text, t.completed_at))
+        Sort Method: external merge  Disk: 17152kB
+        Buffers: shared hit=14027 read=9802, temp read=2144 written=2152
+        ->  Hash Join  (cost=4.55..45390.33 rows=421784 width=25) (actual time=39.354..231.641 rows=473220 loops=1)
+              Hash Cond: ((t.category_code)::text = (sc.category_code)::text)
+              Buffers: shared hit=14021 read=9802
+              ->  Hash Join  (cost=3.46..42054.51 rows=421784 width=27) (actual time=39.339..167.545 rows=473220 loops=1)
+                    Hash Cond: (z.city_id = c.city_id)
+                    Buffers: shared hit=14020 read=9802
+                    ->  Hash Join  (cost=2.35..40007.74 rows=421784 width=22) (actual time=39.332..136.433 rows=473220 loops=1)
+                          Hash Cond: (t.pickup_zone_id = z.zone_id)
+                          Buffers: shared hit=14019 read=9802
+                          ->  Seq Scan on trip t  (cost=0.00..38820.00 rows=421784 width=24) (actual time=39.289..95.410 rows=473220 loops=1)
+                                Filter: ((completed_at >= '2026-04-01 00:00:00+01'::timestamp with time zone) AND ((status)::text = 'completed'::text))
+                                Rows Removed by Filter: 526780
+                                Buffers: shared hit=14018 read=9802
+                          ->  Hash  (cost=1.60..1.60 rows=60 width=6) (actual time=0.021..0.022 rows=60 loops=1)
+                                Buckets: 1024  Batches: 1  Memory Usage: 11kB
+                                Buffers: shared hit=1
+                                ->  Seq Scan on zone z  (cost=0.00..1.60 rows=60 width=6) (actual time=0.014..0.016 rows=60 loops=1)
+                                      Buffers: shared hit=1
+                    ->  Hash  (cost=1.05..1.05 rows=5 width=9) (actual time=0.003..0.003 rows=5 loops=1)
+                          Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                          Buffers: shared hit=1
+                          ->  Seq Scan on city c  (cost=0.00..1.05 rows=5 width=9) (actual time=0.001..0.001 rows=5 loops=1)
+                                Buffers: shared hit=1
+              ->  Hash  (cost=1.04..1.04 rows=4 width=11) (actual time=0.005..0.005 rows=4 loops=1)
+                    Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                    Buffers: shared hit=1
+                    ->  Seq Scan on service_category sc  (cost=0.00..1.04 rows=4 width=11) (actual time=0.002..0.003 rows=4 loops=1)
+                          Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=621
+Planning Time: 0.786 ms
+Execution Time: 403.224 ms

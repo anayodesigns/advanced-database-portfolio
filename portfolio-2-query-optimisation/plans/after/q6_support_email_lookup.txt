@@ -1,0 +1,10 @@
+-- Q6 Support desk: find a rider by email typed in any case.
+-- mode: after, run 5 of 5 (warm cache), 2026-10-10 16:35:03 WAT
+
+Index Scan using ix_rider_email_lower on rider  (cost=0.41..8.43 rows=1 width=74) (actual time=0.006..0.006 rows=1 loops=1)
+  Index Cond: (lower((email)::text) = 'musa.afolabi10007@mail.example'::text)
+  Buffers: shared hit=4
+Planning:
+  Buffers: shared hit=121
+Planning Time: 0.224 ms
+Execution Time: 0.015 ms

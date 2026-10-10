@@ -1,0 +1,72 @@
+### E1. Q4 with work_mem = 4MB (default) vs 64MB — does the sort spill go away?
+--- work_mem=4MB
+GroupAggregate  (cost=94891.91..110708.81 rows=421784 width=87) (actual time=333.212..424.201 rows=35 loops=1)
+        Sort Method: external merge  Disk: 17152kB
+Execution Time: 424.953 ms
+--- work_mem=64MB
+GroupAggregate  (cost=84797.91..100614.81 rows=421784 width=87) (actual time=425.777..493.645 rows=35 loops=1)
+        Sort Method: quicksort  Memory: 34914kB
+Execution Time: 493.721 ms
+
+### E2. Q5 forcing a nested-loop join (hash and merge joins disabled) — was the planner right to hash-join?
+                                ->  Nested Loop  (cost=1.14..57447.68 rows=10736 width=23) (actual time=0.079..26.431 rows=8640 loops=3)
+                                      ->  Nested Loop  (cost=0.85..55397.02 rows=21471 width=10) (actual time=0.050..18.431 rows=17276 loops=3)
+                                            ->  Parallel Index Only Scan using ix_rating_recent_r2d on rating r  (cost=0.42..1621.62 rows=21471 width=10) (actual time=0.033..1.222 rows=17276 loops=3)
+                                                  Index Cond: (created_at >= '2026-09-10 00:00:00+01'::timestamp with time zone)
+                                            ->  Index Scan using trip_pkey on trip t  (cost=0.42..2.50 rows=1 width=16) (actual time=0.001..0.001 rows=1 loops=51829)
+                                                  Index Cond: (trip_id = r.trip_id)
+                                            ->  Index Scan using driver_pkey on driver d  (cost=0.28..0.30 rows=1 width=21) (actual time=0.001..0.001 rows=0 loops=14350)
+                                                  Index Cond: (driver_id = t.driver_id)
+Execution Time: 32.464 ms
+
+### E3. Q5 vs Q5b (time-window predicate lets BRIN prune trip)
+--- Q5
+                                            ->  Parallel Seq Scan on trip t  (cost=0.00..27986.67 rows=416667 width=16) (actual time=0.338..26.118 rows=333333 loops=3)
+Execution Time: 58.796 ms
+--- Q5B
+                                            ->  Parallel Bitmap Heap Scan on trip t  (cost=41.51..24301.95 rows=35005 width=16) (actual time=0.187..5.195 rows=28539 loops=3)
+                                                  ->  Bitmap Index Scan on ix_trip_requested_brin  (cost=0.00..20.50 rows=84566 width=0) (actual time=0.136..0.137 rows=28280 loops=1)
+Execution Time: 19.871 ms
+
+### E4. BRIN vs B-tree on trip.requested_at — size and speed for Q7
+      indexrelname       | pg_size_pretty 
+-------------------------+----------------
+ ix_trip_requested_brin  | 40 kB
+ ix_trip_requested_btree | 21 MB
+(2 rows)
+
+--- with both indexes the planner picks:
+        ->  Index Only Scan using ix_trip_requested_btree on trip  (cost=0.42..96.39 rows=2843 width=8) (actual time=0.037..0.289 rows=2739 loops=1)
+              Index Cond: ((requested_at >= '2026-06-15 00:00:00+01'::timestamp with time zone) AND (requested_at < '2026-06-16 00:00:00+01'::timestamp with time zone))
+Execution Time: 0.502 ms
+--- BRIN only:
+              Rows Removed by Index Recheck: 3990
+              ->  Bitmap Index Scan on ix_trip_requested_brin  (cost=0.00..20.02 rows=4027 width=0) (actual time=0.091..0.092 rows=1600 loops=1)
+                    Index Cond: ((requested_at >= '2026-06-15 00:00:00+01'::timestamp with time zone) AND (requested_at < '2026-06-16 00:00:00+01'::timestamp with time zone))
+Execution Time: 1.652 ms
+
+### E5. Correlation statistic that makes BRIN viable (1.0 = physical order matches column order)
+   attname    | correlation 
+--------------+-------------
+ trip_id      |      1.0000
+ rider_id     |     -0.0035
+ driver_id    |     -0.0011
+ requested_at |      1.0000
+(4 rows)
+
+
+### E6. Materialized view refresh cost (paid every 15 min instead of on every dashboard load)
+Timing is on.
+REFRESH MATERIALIZED VIEW
+Time: 548.683 ms
+
+### E7. Q5 with random_page_cost = 1.1 (SSD) instead of the default 4.0 — does the planner now pick the nested loop itself?
+--- random_page_cost=4
+                                ->  Hash Join  (cost=2069.76..31206.58 rows=10736 width=23) (actual time=43.693..48.463 rows=8640 loops=3)
+                                      ->  Parallel Hash Join  (cost=1890.01..30970.43 rows=21471 width=10) (actual time=42.919..46.581 rows=17276 loops=3)
+                                            ->  Parallel Seq Scan on trip t  (cost=0.00..27986.67 rows=416667 width=16) (actual time=0.051..20.814 rows=333333 loops=3)
+Execution Time: 54.656 ms
+--- random_page_cost=1.1
+                                ->  Hash Join  (cost=180.60..22794.68 rows=10736 width=23) (actual time=0.514..16.909 rows=8640 loops=3)
+                                      ->  Nested Loop  (cost=0.85..22558.52 rows=21471 width=10) (actual time=0.027..15.164 rows=17276 loops=3)
+Execution Time: 22.458 ms

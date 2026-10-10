@@ -1,0 +1,56 @@
+-- Q5 Operations: top 10 Lagos drivers by average rating in the last 30 days (min. 20 ratings).
+-- mode: after, run 5 of 5 (warm cache), 2026-10-10 16:35:03 WAT
+
+Limit  (cost=33131.68..33131.70 rows=10 width=61) (actual time=40.632..41.562 rows=10 loops=1)
+  Buffers: shared hit=15010 read=9354
+  ->  Sort  (cost=33131.68..33133.76 rows=833 width=61) (actual time=40.632..41.561 rows=10 loops=1)
+        Sort Key: (round(avg(r.score), 2)) DESC, (count(*)) DESC
+        Sort Method: top-N heapsort  Memory: 26kB
+        Buffers: shared hit=15010 read=9354
+        ->  Finalize GroupAggregate  (cost=32453.22..33113.68 rows=833 width=61) (actual time=39.314..41.543 rows=74 loops=1)
+              Group Key: d.driver_id
+              Filter: (count(*) >= 20)
+              Rows Removed by Filter: 2424
+              Buffers: shared hit=15007 read=9354
+              ->  Gather Merge  (cost=32453.22..33036.60 rows=5000 width=61) (actual time=39.303..40.737 rows=7188 loops=1)
+                    Workers Planned: 2
+                    Workers Launched: 2
+                    Buffers: shared hit=15007 read=9354
+                    ->  Sort  (cost=31453.20..31459.45 rows=2500 width=61) (actual time=38.171..38.227 rows=2396 loops=3)
+                          Sort Key: d.driver_id
+                          Sort Method: quicksort  Memory: 304kB
+                          Buffers: shared hit=15007 read=9354
+                          Worker 0:  Sort Method: quicksort  Memory: 304kB
+                          Worker 1:  Sort Method: quicksort  Memory: 304kB
+                          ->  Partial HashAggregate  (cost=31287.10..31312.10 rows=2500 width=61) (actual time=37.755..37.900 rows=2396 loops=3)
+                                Group Key: d.driver_id
+                                Batches: 1  Memory Usage: 625kB
+                                Buffers: shared hit=14991 read=9354
+                                Worker 0:  Batches: 1  Memory Usage: 625kB
+                                Worker 1:  Batches: 1  Memory Usage: 625kB
+                                ->  Hash Join  (cost=2069.76..31206.58 rows=10736 width=23) (actual time=32.199..36.878 rows=8640 loops=3)
+                                      Hash Cond: (t.driver_id = d.driver_id)
+                                      Buffers: shared hit=14991 read=9354
+                                      ->  Parallel Hash Join  (cost=1890.01..30970.43 rows=21471 width=10) (actual time=31.749..35.287 rows=17276 loops=3)
+                                            Hash Cond: (t.trip_id = r.trip_id)
+                                            Buffers: shared hit=14727 read=9354
+                                            ->  Parallel Seq Scan on trip t  (cost=0.00..27986.67 rows=416667 width=16) (actual time=0.026..14.317 rows=333333 loops=3)
+                                                  Buffers: shared hit=14466 read=9354
+                                            ->  Parallel Hash  (cost=1621.62..1621.62 rows=21471 width=10) (actual time=1.804..1.806 rows=17276 loops=3)
+                                                  Buckets: 65536  Batches: 1  Memory Usage: 2976kB
+                                                  Buffers: shared hit=261
+                                                  ->  Parallel Index Only Scan using ix_rating_recent_r2d on rating r  (cost=0.42..1621.62 rows=21471 width=10) (actual time=0.015..0.887 rows=17276 loops=3)
+                                                        Index Cond: (created_at >= '2026-09-10 00:00:00+01'::timestamp with time zone)
+                                                        Heap Fetches: 0
+                                                        Buffers: shared hit=261
+                                      ->  Hash  (cost=148.50..148.50 rows=2500 width=21) (actual time=0.440..0.440 rows=2500 loops=3)
+                                            Buckets: 4096  Batches: 1  Memory Usage: 163kB
+                                            Buffers: shared hit=258
+                                            ->  Seq Scan on driver d  (cost=0.00..148.50 rows=2500 width=21) (actual time=0.013..0.303 rows=2500 loops=3)
+                                                  Filter: (city_id = 1)
+                                                  Rows Removed by Filter: 2500
+                                                  Buffers: shared hit=258
+Planning:
+  Buffers: shared hit=395
+Planning Time: 0.720 ms
+Execution Time: 41.615 ms

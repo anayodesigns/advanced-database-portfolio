@@ -1,0 +1,62 @@
+-- Q5b Q5 rewritten: ratings are only accepted within 24 h of the trip (business rule), so the trip side can be limited to the same window (+1 day); the BRIN index then skips ~92% of trip.
+-- mode: after, run 5 of 5 (warm cache), 2026-10-10 16:35:04 WAT
+
+Limit  (cost=27988.04..27988.07 rows=10 width=61) (actual time=17.998..18.590 rows=10 loops=1)
+  Buffers: shared hit=3391
+  ->  Sort  (cost=27988.04..27989.85 rows=721 width=61) (actual time=17.997..18.588 rows=10 loops=1)
+        Sort Key: (round(avg(r.score), 2)) DESC, (count(*)) DESC
+        Sort Method: top-N heapsort  Memory: 26kB
+        Buffers: shared hit=3391
+        ->  Finalize GroupAggregate  (cost=27671.04..27972.46 rows=721 width=61) (actual time=14.974..18.566 rows=74 loops=1)
+              Group Key: d.driver_id
+              Filter: (count(*) >= 20)
+              Rows Removed by Filter: 2424
+              Buffers: shared hit=3388
+              ->  Gather Merge  (cost=27671.04..27924.67 rows=1804 width=61) (actual time=14.917..17.638 rows=7171 loops=1)
+                    Workers Planned: 2
+                    Workers Launched: 2
+                    Buffers: shared hit=3388
+                    ->  Partial GroupAggregate  (cost=26671.02..26716.42 rows=902 width=61) (actual time=12.990..14.730 rows=2390 loops=3)
+                          Group Key: d.driver_id
+                          Buffers: shared hit=3388
+                          ->  Merge Join  (cost=26671.02..26700.64 rows=902 width=23) (actual time=12.984..14.103 rows=8640 loops=3)
+                                Merge Cond: (t.driver_id = d.driver_id)
+                                Buffers: shared hit=3388
+                                ->  Sort  (cost=26381.42..26385.93 rows=1804 width=10) (actual time=12.393..12.712 rows=8641 loops=3)
+                                      Sort Key: t.driver_id
+                                      Sort Method: quicksort  Memory: 1302kB
+                                      Buffers: shared hit=3130
+                                      Worker 0:  Sort Method: quicksort  Memory: 1318kB
+                                      Worker 1:  Sort Method: quicksort  Memory: 1305kB
+                                      ->  Parallel Hash Join  (cost=1931.51..26283.85 rows=1804 width=10) (actual time=4.299..10.661 rows=17276 loops=3)
+                                            Hash Cond: (t.trip_id = r.trip_id)
+                                            Buffers: shared hit=3120
+                                            ->  Parallel Bitmap Heap Scan on trip t  (cost=41.51..24301.95 rows=35005 width=16) (actual time=0.155..5.149 rows=28539 loops=3)
+                                                  Recheck Cond: (requested_at >= '2026-09-09 00:00:00+01'::timestamp with time zone)
+                                                  Rows Removed by Index Recheck: 11101
+                                                  Heap Blocks: lossy=958
+                                                  Buffers: shared hit=2835
+                                                  ->  Bitmap Index Scan on ix_trip_requested_brin  (cost=0.00..20.50 rows=84566 width=0) (actual time=0.095..0.096 rows=28280 loops=1)
+                                                        Index Cond: (requested_at >= '2026-09-09 00:00:00+01'::timestamp with time zone)
+                                                        Buffers: shared hit=7
+                                            ->  Parallel Hash  (cost=1621.62..1621.62 rows=21471 width=10) (actual time=2.445..2.445 rows=17276 loops=3)
+                                                  Buckets: 65536  Batches: 1  Memory Usage: 3008kB
+                                                  Buffers: shared hit=261
+                                                  ->  Parallel Index Only Scan using ix_rating_recent_r2d on rating r  (cost=0.42..1621.62 rows=21471 width=10) (actual time=0.018..1.127 rows=17276 loops=3)
+                                                        Index Cond: (created_at >= '2026-09-10 00:00:00+01'::timestamp with time zone)
+                                                        Heap Fetches: 0
+                                                        Buffers: shared hit=261
+                                ->  Sort  (cost=289.60..295.85 rows=2500 width=21) (actual time=0.588..0.660 rows=2500 loops=3)
+                                      Sort Key: d.driver_id
+                                      Sort Method: quicksort  Memory: 196kB
+                                      Buffers: shared hit=258
+                                      Worker 0:  Sort Method: quicksort  Memory: 196kB
+                                      Worker 1:  Sort Method: quicksort  Memory: 196kB
+                                      ->  Seq Scan on driver d  (cost=0.00..148.50 rows=2500 width=21) (actual time=0.047..0.346 rows=2500 loops=3)
+                                            Filter: (city_id = 1)
+                                            Rows Removed by Filter: 2500
+                                            Buffers: shared hit=258
+Planning:
+  Buffers: shared hit=405
+Planning Time: 0.862 ms
+Execution Time: 18.644 ms

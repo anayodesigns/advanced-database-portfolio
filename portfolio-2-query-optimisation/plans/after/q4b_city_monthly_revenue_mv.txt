@@ -1,0 +1,15 @@
+-- Q4b Same dashboard, served from the materialized view (refreshed every 15 minutes).
+-- mode: after, run 5 of 5 (warm cache), 2026-10-10 16:35:04 WAT
+
+Sort  (cost=2.71..2.80 rows=35 width=38) (actual time=0.025..0.025 rows=35 loops=1)
+  Sort Key: city, month
+  Sort Method: quicksort  Memory: 27kB
+  Buffers: shared hit=7
+  ->  Seq Scan on mv_city_monthly_revenue  (cost=0.00..1.81 rows=35 width=38) (actual time=0.003..0.006 rows=35 loops=1)
+        Filter: (month >= '2026-04-01 00:00:00+01'::timestamp with time zone)
+        Rows Removed by Filter: 30
+        Buffers: shared hit=1
+Planning:
+  Buffers: shared hit=90
+Planning Time: 0.149 ms
+Execution Time: 0.042 ms

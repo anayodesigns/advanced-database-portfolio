@@ -1,0 +1,22 @@
+-- Q7 Capacity planning: trip requests per hour on one day (time-range scan).
+-- mode: after, run 5 of 5 (warm cache), 2026-10-10 16:35:03 WAT
+
+GroupAggregate  (cost=10707.74..10764.60 rows=2843 width=16) (actual time=0.967..1.084 rows=24 loops=1)
+  Group Key: (date_trunc('hour'::text, requested_at))
+  Buffers: shared hit=173
+  ->  Sort  (cost=10707.74..10714.85 rows=2843 width=8) (actual time=0.959..1.006 rows=2739 loops=1)
+        Sort Key: (date_trunc('hour'::text, requested_at))
+        Sort Method: quicksort  Memory: 97kB
+        Buffers: shared hit=173
+        ->  Bitmap Heap Scan on trip  (cost=20.73..10544.65 rows=2843 width=8) (actual time=0.190..0.876 rows=2739 loops=1)
+              Recheck Cond: ((requested_at >= '2026-06-15 00:00:00+01'::timestamp with time zone) AND (requested_at < '2026-06-16 00:00:00+01'::timestamp with time zone))
+              Rows Removed by Index Recheck: 3990
+              Heap Blocks: lossy=160
+              Buffers: shared hit=170
+              ->  Bitmap Index Scan on ix_trip_requested_brin  (cost=0.00..20.02 rows=4027 width=0) (actual time=0.048..0.048 rows=1600 loops=1)
+                    Index Cond: ((requested_at >= '2026-06-15 00:00:00+01'::timestamp with time zone) AND (requested_at < '2026-06-16 00:00:00+01'::timestamp with time zone))
+                    Buffers: shared hit=10
+Planning:
+  Buffers: shared hit=182
+Planning Time: 0.315 ms
+Execution Time: 1.111 ms

@@ -1,0 +1,18 @@
+-- Q2 Driver app: daily earnings for the last 30 days.
+-- mode: after, run 5 of 5 (warm cache), 2026-10-10 16:35:00 WAT
+
+GroupAggregate  (cost=4.91..5.21 rows=12 width=48) (actual time=0.110..0.114 rows=13 loops=1)
+  Group Key: (date_trunc('day'::text, completed_at))
+  Buffers: shared hit=10
+  ->  Sort  (cost=4.91..4.94 rows=12 width=13) (actual time=0.098..0.098 rows=15 loops=1)
+        Sort Key: (date_trunc('day'::text, completed_at))
+        Sort Method: quicksort  Memory: 25kB
+        Buffers: shared hit=10
+        ->  Index Only Scan using ix_trip_driver_completed on trip  (cost=0.42..4.70 rows=12 width=13) (actual time=0.074..0.076 rows=15 loops=1)
+              Index Cond: ((driver_id = 17) AND (completed_at >= '2026-09-10 00:00:00+01'::timestamp with time zone))
+              Heap Fetches: 0
+              Buffers: shared hit=7
+Planning:
+  Buffers: shared hit=215
+Planning Time: 0.655 ms
+Execution Time: 0.158 ms

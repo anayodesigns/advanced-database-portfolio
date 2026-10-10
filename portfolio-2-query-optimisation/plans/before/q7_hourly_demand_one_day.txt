@@ -1,0 +1,27 @@
+-- Q7 Capacity planning: trip requests per hour on one day (time-range scan).
+-- mode: before, run 5 of 5 (warm cache), 2026-10-10 16:33:32 WAT
+
+Finalize GroupAggregate  (cost=31126.72..31438.81 rows=2576 width=16) (actual time=26.805..27.878 rows=24 loops=1)
+  Group Key: (date_trunc('hour'::text, requested_at))
+  Buffers: shared hit=15250 read=8644
+  ->  Gather Merge  (cost=31126.72..31395.88 rows=2146 width=16) (actual time=26.802..27.872 rows=30 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=15250 read=8644
+        ->  Partial GroupAggregate  (cost=30126.69..30148.15 rows=1073 width=16) (actual time=25.696..25.741 rows=10 loops=3)
+              Group Key: (date_trunc('hour'::text, requested_at))
+              Buffers: shared hit=15250 read=8644
+              ->  Sort  (cost=30126.69..30129.38 rows=1073 width=8) (actual time=25.690..25.710 rows=913 loops=3)
+                    Sort Key: (date_trunc('hour'::text, requested_at))
+                    Sort Method: quicksort  Memory: 49kB
+                    Buffers: shared hit=15250 read=8644
+                    Worker 0:  Sort Method: quicksort  Memory: 25kB
+                    Worker 1:  Sort Method: quicksort  Memory: 25kB
+                    ->  Parallel Seq Scan on trip  (cost=0.00..30072.68 rows=1073 width=8) (actual time=16.027..25.644 rows=913 loops=3)
+                          Filter: ((requested_at >= '2026-06-15 00:00:00+01'::timestamp with time zone) AND (requested_at < '2026-06-16 00:00:00+01'::timestamp with time zone))
+                          Rows Removed by Filter: 332420
+                          Buffers: shared hit=15176 read=8644
+Planning:
+  Buffers: shared hit=81
+Planning Time: 0.158 ms
+Execution Time: 27.909 ms

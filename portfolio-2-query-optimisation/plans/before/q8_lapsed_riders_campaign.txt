@@ -1,0 +1,42 @@
+-- Q8 Marketing: Abuja riders with >= NGN 15,000 in their wallet who have not travelled in 60 days.
+-- mode: before, run 5 of 5 (warm cache), 2026-10-10 16:33:34 WAT
+
+Limit  (cost=4863.43..24706.55 rows=25 width=27) (actual time=266.855..274.973 rows=25 loops=1)
+  Buffers: shared hit=16159 read=9453
+  ->  Nested Loop  (cost=4863.43..749377.30 rows=938 width=27) (actual time=266.854..274.971 rows=25 loops=1)
+        Join Filter: (r.rider_id = w.rider_id)
+        Rows Removed by Join Filter: 4438023
+        Buffers: shared hit=16159 read=9453
+        ->  Gather Merge  (cost=3262.85..5627.52 rows=20748 width=14) (actual time=3.927..5.737 rows=5520 loops=1)
+              Workers Planned: 1
+              Workers Launched: 1
+              Buffers: shared hit=1066
+              ->  Sort  (cost=2262.84..2293.36 rows=12205 width=14) (actual time=3.042..3.138 rows=3528 loops=2)
+                    Sort Key: w.balance DESC
+                    Sort Method: quicksort  Memory: 761kB
+                    Buffers: shared hit=1066
+                    Worker 0:  Sort Method: quicksort  Memory: 630kB
+                    ->  Parallel Seq Scan on wallet w  (cost=0.00..1434.42 rows=12205 width=14) (actual time=0.162..1.962 rows=10394 loops=2)
+                          Filter: (balance >= '15000'::numeric)
+                          Rows Removed by Filter: 17107
+                          Buffers: shared hit=1030
+        ->  Materialize  (cost=1600.58..39775.80 rows=2262 width=21) (actual time=0.015..0.030 rows=804 loops=5520)
+              Buffers: shared hit=15093 read=9453
+              ->  Hash Right Anti Join  (cost=1600.58..39764.49 rows=2262 width=21) (actual time=83.003..83.122 rows=804 loops=1)
+                    Hash Cond: (t.rider_id = r.rider_id)
+                    Buffers: shared hit=15093 read=9453
+                    ->  Seq Scan on trip t  (cost=0.00..36320.00 rows=164264 width=8) (actual time=60.181..73.041 rows=165069 loops=1)
+                          Filter: (requested_at >= '2026-08-11 00:00:00+01'::timestamp with time zone)
+                          Rows Removed by Filter: 834931
+                          Buffers: shared hit=14367 read=9453
+                    ->  Hash  (cost=1476.00..1476.00 rows=9966 width=21) (actual time=3.184..3.184 rows=9933 loops=1)
+                          Buckets: 16384  Batches: 1  Memory Usage: 649kB
+                          Buffers: shared hit=726
+                          ->  Seq Scan on rider r  (cost=0.00..1476.00 rows=9966 width=21) (actual time=0.008..2.658 rows=9933 loops=1)
+                                Filter: ((home_city_id = 2) AND ((status)::text = 'active'::text))
+                                Rows Removed by Filter: 40067
+                                Buffers: shared hit=726
+Planning:
+  Buffers: shared hit=337
+Planning Time: 0.599 ms
+Execution Time: 275.008 ms

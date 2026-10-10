@@ -1,0 +1,27 @@
+-- Q2 Driver app: daily earnings for the last 30 days.
+-- mode: before, run 5 of 5 (warm cache), 2026-10-10 16:33:29 WAT
+
+Finalize GroupAggregate  (cost=32111.76..32113.32 rows=12 width=48) (actual time=29.448..30.644 rows=13 loops=1)
+  Group Key: (date_trunc('day'::text, completed_at))
+  Buffers: shared hit=15520 read=8374
+  ->  Gather Merge  (cost=32111.76..32113.04 rows=10 width=48) (actual time=29.440..30.619 rows=13 loops=1)
+        Workers Planned: 2
+        Workers Launched: 2
+        Buffers: shared hit=15520 read=8374
+        ->  Partial GroupAggregate  (cost=31111.74..31111.86 rows=5 width=48) (actual time=28.116..28.122 rows=4 loops=3)
+              Group Key: (date_trunc('day'::text, completed_at))
+              Buffers: shared hit=15520 read=8374
+              ->  Sort  (cost=31111.74..31111.75 rows=5 width=13) (actual time=28.109..28.110 rows=5 loops=3)
+                    Sort Key: (date_trunc('day'::text, completed_at))
+                    Sort Method: quicksort  Memory: 25kB
+                    Buffers: shared hit=15520 read=8374
+                    Worker 0:  Sort Method: quicksort  Memory: 25kB
+                    Worker 1:  Sort Method: quicksort  Memory: 25kB
+                    ->  Parallel Seq Scan on trip  (cost=0.00..31111.68 rows=5 width=13) (actual time=26.014..28.085 rows=5 loops=3)
+                          Filter: ((completed_at >= '2026-09-10 00:00:00+01'::timestamp with time zone) AND (driver_id = 17) AND ((status)::text = 'completed'::text))
+                          Rows Removed by Filter: 333328
+                          Buffers: shared hit=15446 read=8374
+Planning:
+  Buffers: shared hit=121
+Planning Time: 0.185 ms
+Execution Time: 30.678 ms
