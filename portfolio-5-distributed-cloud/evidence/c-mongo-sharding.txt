@@ -1,0 +1,54 @@
+=== C1. Cluster topology
+   shard shA: shA/localhost:27031
+   shard shB: shB/localhost:27032
+   router: mongos localhost:27040 | config servers: cfg/localhost:27030
+
+=== C2. Zone sharding: shard key {city: 1, _id: 1}; Lagos -> shA, all other cities -> shB
+1
+   zone REST_OF_NIGERIA  {"city":{"$minKey":1},"_id":{"$minKey":1}} -> {"city":"Lagos","_id":{"$minKey":1}}
+   zone LAGOS            {"city":"Lagos","_id":{"$minKey":1}} -> {"city":"Lagos\u0000","_id":{"$minKey":1}}
+   zone REST_OF_NIGERIA  {"city":"Lagos\u0000","_id":{"$minKey":1}} -> {"city":{"$maxKey":1},"_id":{"$maxKey":1}}
+
+=== C3. Load all 107,535 trips through the router
+   inserted 107535 trips via mongos in 3817 ms
+--- documents per shard, read directly from each shard server:
+   shA (port 27031): 53764 trips, cities = ["Lagos"]
+   shB (port 27032): 53771 trips, cities = ["Abuja","Ibadan","Kano","Port Harcourt"]
+--- the router's view (getShardDistribution):
+   Shard shA at shA/localhost:27031
+     data: '46.5MiB',
+     docs: 53764,
+     chunks: 1,
+     'estimated data per chunk': '46.5MiB',
+     'estimated docs per chunk': 53764
+   Shard shB at shB/localhost:27032
+     data: '46.57MiB',
+     docs: 53771,
+     chunks: 2,
+     'estimated data per chunk': '23.28MiB',
+     'estimated docs per chunk': 26885
+   Totals
+     data: '93.08MiB',
+     docs: 107535,
+     chunks: 3,
+     'Shard shA': [
+       '49.96 % data',
+       '49.99 % docs in cluster',
+     'Shard shB': [
+       '50.03 % data',
+       '50 % docs in cluster',
+
+=== C4. Query routing: targeted vs scatter-gather
+   city = "Lagos" AND rider = 4070   (shard key prefix present)
+      router stage: SINGLE_SHARD   shards contacted: ["shA"]   nReturned: 8   docs examined: 8
+   rider = 4070 only                 (no shard key)
+      router stage: SHARD_MERGE   shards contacted: ["shA","shB"]   nReturned: 8   docs examined: 8
+   city IN ["Kano","Abuja"]              (both in one zone)
+      router stage: SINGLE_SHARD   shards contacted: ["shB"]   nReturned: 91   docs examined: 30143
+   aggregate $group by city: split into per-shard partial groups + merge on mongos; shards: ["shB","shA"]
+
+=== C5. Comparison: a hashed shard key spreads data evenly but loses city locality
+   trips_hashed (50,000 docs), documents per shard:
+      shA: 25023
+      shB: 24977
+   query city = "Lagos" on hashed collection -> SHARD_MERGE, shards: ["shA","shB"]

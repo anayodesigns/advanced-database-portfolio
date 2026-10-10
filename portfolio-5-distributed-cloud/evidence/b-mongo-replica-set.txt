@@ -1,0 +1,50 @@
+=== B1. Initiate the replica set and wait for an election
+1
+   localhost:27021  PRIMARY    health=1
+   localhost:27022  SECONDARY  health=1
+   localhost:27023  SECONDARY  health=1
+   electionTimeoutMillis=10000  heartbeatIntervalMillis=2000  writeConcernMajorityJournalDefault=true
+
+=== B2. Load 20,000 trips (copied from the Portfolio 4 standalone) with writeConcern majority
+   inserted 20000 trips in 1112 ms (each batch acknowledged by >= 2 of 3 members)
+--- read the same data from each member (secondaryOk reads):
+   localhost:27021 (PRIMARY): trips = 20000
+   localhost:27022 (SECONDARY): trips = 20000
+   localhost:27023 (SECONDARY): trips = 20000
+--- secondary replication lag:
+   source: localhost:27022
+     replLag: '0 secs (0 hrs) behind the primary '
+   source: localhost:27023
+     replLag: '0 secs (0 hrs) behind the primary '
+
+=== B3. Write concern trade-off: 2,000 single-document inserts, w:1 vs w:"majority"
+   w:1          0.292 ms per insert
+   w:"majority" 6.763 ms per insert
+true
+
+=== B4. Failover: kill -9 the primary, measure time until a new primary accepts writes
+   current primary: localhost:27021
+   majority write committed before the crash
+   killed localhost:27021 (SIGKILL)
+   new primary localhost:27022 elected after 11.1 s
+   localhost:27021  (not reachable/healthy) health=0
+   localhost:27022  PRIMARY    health=1
+   localhost:27023  SECONDARY  health=1
+   marker survived failover: 1 document(s)
+   majority write with 2 of 3 members: acknowledged=true
+
+=== B5. Lose the majority: kill a second member (1 of 3 left)
+   killed localhost:27022
+   surviving member localhost:27023: isWritablePrimary=false, state=SECONDARY
+   write refused: NotWritablePrimary
+   read still served by the secondary: trips = 20001 (may be stale, readConcern "local")
+   -> with no majority, MongoDB chooses consistency: no primary, no writes (CP), but secondary reads stay available.
+
+=== B6. Recovery: restart both failed members; they rejoin and catch up
+   all 3 members healthy again after 6.8 s
+   localhost:27021  SECONDARY  health=1
+   localhost:27022  SECONDARY  health=1
+   localhost:27023  PRIMARY    health=1
+   localhost:27021: trips=20001  post-failover doc present=1
+   localhost:27022: trips=20001  post-failover doc present=1
+   localhost:27023: trips=20001  post-failover doc present=1

@@ -1,0 +1,145 @@
+=== A1. Build the standby with pg_basebackup (physical copy + replication slot + standby config)
+$ pg_basebackup -h localhost -p 5433 -U postgres -D /Users/mac/.local/var/pg/replica -R -X stream -C -S replica1 --progress
+waiting for checkpoint
+     67/1318361 kB (0%), 0/1 tablespace
+ 584252/1318361 kB (44%), 0/1 tablespace
+1235809/1318361 kB (93%), 0/1 tablespace
+1318371/1318371 kB (100%), 0/1 tablespace
+1318371/1318371 kB (100%), 1/1 tablespace
+
+basebackup took 57 s
+$ pg_ctl -D /Users/mac/.local/var/pg/replica -o -p 5434 -l /Users/mac/.local/var/log/pg-replica.log -w start
+waiting for server to start.... done
+server started
+
+=== A2. Replication status as seen from the primary and the standby
+$ psql -X -p 5433 -c SELECT application_name, state, sync_state, sent_lsn, replay_lsn, pg_wal_lsn_diff(sent_lsn, replay_lsn) AS lag_bytes, replay_lag FROM pg_stat_replication
+ application_name |   state   | sync_state |  sent_lsn  | replay_lsn | lag_bytes |   replay_lag    
+------------------+-----------+------------+------------+------------+-----------+-----------------
+ replica1         | streaming | async      | 0/E0000060 | 0/E0000060 |         0 | 00:00:00.007006
+(1 row)
+
+
+$ psql -X -p 5434 -c SELECT pg_is_in_recovery() AS is_standby, pg_last_wal_replay_lsn() AS replayed_to, now() - pg_last_xact_replay_timestamp() AS time_since_last_replayed_txn
+ is_standby | replayed_to | time_since_last_replayed_txn 
+------------+-------------+------------------------------
+ t          | 0/E0000060  | 
+(1 row)
+
+
+=== A3. Write on the primary, read it on the standby; measure how long until it is visible
+probe 1: visible on standby after 32.9 ms (0 polls)
+probe 2: visible on standby after 24.4 ms (0 polls)
+probe 3: visible on standby after 26.5 ms (0 polls)
+probe 4: visible on standby after 26.0 ms (0 polls)
+probe 5: visible on standby after 26.6 ms (0 polls)
+
+=== A4. The standby is read-only (hot standby): reads work, writes are refused
+$ psql -X -p 5434 -c SELECT count(*) AS trips_on_standby FROM swiftmove.trip
+ trips_on_standby 
+------------------
+          1020007
+(1 row)
+
+
+$ psql -X -p 5434 -c UPDATE swiftmove.wallet SET balance = balance + 1 WHERE wallet_id = 2
+ERROR:  cannot execute UPDATE in a read-only transaction
+
+=== A5. Read scaling: the analytics query (Portfolio 2 Q4b) served by the standby
+$ psql -X -p 5434 -c SELECT city, sum(trips) AS trips_6_months FROM swiftmove.mv_city_monthly_revenue WHERE month >= '2026-04-01' GROUP BY city ORDER BY 2 DESC
+     city      | trips_6_months 
+---------------+----------------
+ Lagos         |         236520
+ Abuja         |          95135
+ Port Harcourt |          56688
+ Ibadan        |          47379
+ Kano          |          37498
+(5 rows)
+
+
+=== A6. Asynchronous vs synchronous commit (pgbench, 4 clients, 10 s, wallet payments from Portfolio 3)
+--- asynchronous (default): COMMIT returns once WAL is flushed on the primary
+latency average = 0.187 ms
+tps = 21390.627718 (without initial connection time)
+$ psql -X -p 5433 -c SELECT application_name, sync_state FROM pg_stat_replication
+ application_name | sync_state 
+------------------+------------
+ replica1         | sync
+(1 row)
+
+
+--- synchronous: COMMIT also waits for the standby to confirm the WAL is flushed
+latency average = 0.229 ms
+tps = 17504.980966 (without initial connection time)
+
+=== A7. Lag under write load: bulk insert 2,000,000 GPS-ping rows on the primary, sample lag while it streams
+t+1s  lag_bytes=0  write_lag=00:00:00.000178  replay_lag=00:00:00.000362
+t+2s  lag_bytes=7159808  write_lag=00:00:00.013603  replay_lag=00:00:00.038515
+t+3s  lag_bytes=5603352  write_lag=00:00:00.013677  replay_lag=00:00:00.249478
+t+4s  lag_bytes=7258136  write_lag=00:00:00.0115  replay_lag=00:00:00.100282
+t+5s  lag_bytes=0  write_lag=00:00:00.007335  replay_lag=00:00:00.098865
+t+6s  lag_bytes=0  write_lag=00:00:00.001036  replay_lag=00:00:00.001276
+after load: lag_bytes=0
+
+=== A8. Failover: commit a payment, crash the primary, promote the standby
+$ psql -X -p 5433 -c SELECT swiftmove.pay_trip(1000002) AS committed_on_primary_before_crash
+ committed_on_primary_before_crash 
+-----------------------------------
+ paid
+(1 row)
+
+
+$ pg_ctl -D /Users/mac/.local/var/pg/primary stop -m immediate
+waiting for server to shut down.... done
+server stopped
+
+$ psql -X -p 5434 -c SELECT pg_is_in_recovery() AS still_standby
+ still_standby 
+---------------
+ t
+(1 row)
+
+
+$ pg_ctl -D /Users/mac/.local/var/pg/replica promote -w
+waiting for server to promote.... done
+server promoted
+
+promotion took 121 ms
+$ psql -X -p 5434 -c SELECT pg_is_in_recovery() AS still_standby
+ still_standby 
+---------------
+ f
+(1 row)
+
+
+$ psql -X -p 5434 -c SELECT trip_id, status, amount FROM swiftmove.payment WHERE trip_id = 1000002 AND status = 'succeeded'
+ trip_id |  status   | amount  
+---------+-----------+---------
+ 1000002 | succeeded | 1700.00
+(1 row)
+
+
+--- the promoted server now accepts writes:
+$ psql -X -p 5434 -c INSERT INTO swiftmove.replication_probe (note) VALUES ('written after failover') RETURNING id, note
+ id |          note          
+----+------------------------
+ 68 | written after failover
+(1 row)
+
+INSERT 0 1
+
+$ psql -X -p 5434 -c SELECT count(*) AS wallets_not_matching_ledger FROM swiftmove.wallet w JOIN (SELECT wallet_id, sum(amount) s FROM swiftmove.wallet_ledger GROUP BY wallet_id) l USING (wallet_id) WHERE w.balance <> l.s
+ wallets_not_matching_ledger 
+-----------------------------
+                           0
+(1 row)
+
+
+=== A9. Clean-up: retire the promoted copy, restart the original primary (it still has every commit up to the crash)
+$ psql -X -p 5433 -c SELECT pg_is_in_recovery() AS is_standby, (SELECT count(*) FROM swiftmove.payment WHERE trip_id = 1000002 AND status='succeeded') AS crash_test_payment_present
+ is_standby | crash_test_payment_present 
+------------+----------------------------
+ f          |                          1
+(1 row)
+
+

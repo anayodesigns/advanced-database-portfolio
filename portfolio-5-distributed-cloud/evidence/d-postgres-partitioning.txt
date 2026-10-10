@@ -1,0 +1,146 @@
+SET
+Timing is off.
+psql:scripts/d_postgres_partitioning.sql:5: NOTICE:  table "trip_by_month" does not exist, skipping
+DROP TABLE
+psql:scripts/d_postgres_partitioning.sql:6: NOTICE:  table "trip_archive_2025_10" does not exist, skipping
+DROP TABLE
+CREATE TABLE
+DO
+CREATE TABLE
+ALTER TABLE
+CREATE INDEX
+=== D1. Load 1,000,000 trips; rows per partition
+Timing is on.
+INSERT 0 1000000
+Time: 8045.449 ms (00:08.045)
+Timing is off.
+ANALYZE
+       partition       | trips |  size   
+-----------------------+-------+---------
+ trip_by_month_2025_10 | 59588 | 11 MB
+ trip_by_month_2025_11 | 82192 | 15 MB
+ trip_by_month_2025_12 | 84931 | 16 MB
+ trip_by_month_2026_01 | 84932 | 16 MB
+ trip_by_month_2026_02 | 76712 | 14 MB
+ trip_by_month_2026_03 | 84932 | 16 MB
+ trip_by_month_2026_04 | 82191 | 15 MB
+ trip_by_month_2026_05 | 84932 | 16 MB
+ trip_by_month_2026_06 | 82192 | 15 MB
+ trip_by_month_2026_07 | 84931 | 16 MB
+ trip_by_month_2026_08 | 84932 | 16 MB
+ trip_by_month_2026_09 | 82192 | 15 MB
+ trip_by_month_2026_10 | 25343 | 4800 kB
+(13 rows)
+
+=== D2. Planning-time pruning: one month of data -> only that partition is scanned
+                                                                           QUERY PLAN                                                                           
+----------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate (actual rows=1 loops=1)
+   ->  Seq Scan on trip_by_month_2026_06 trip_by_month (actual rows=82192 loops=1)
+         Filter: ((requested_at >= '2026-06-01 00:00:00+01'::timestamp with time zone) AND (requested_at < '2026-07-01 00:00:00+01'::timestamp with time zone))
+(3 rows)
+
+=== D3. Run-time pruning: parameter value only known at execution (prepared statement, generic plan)
+SET
+PREPARE
+                                                   QUERY PLAN                                                   
+----------------------------------------------------------------------------------------------------------------
+ Finalize Aggregate (actual rows=1 loops=1)
+   ->  Gather (actual rows=3 loops=1)
+         Workers Planned: 2
+         Workers Launched: 2
+         ->  Partial Aggregate (actual rows=1 loops=3)
+               ->  Parallel Append (actual rows=23060 loops=3)
+                     Subplans Removed: 11
+                     ->  Seq Scan on trip_by_month_default trip_by_month_3 (actual rows=0 loops=1)
+                           Filter: (requested_at >= $1)
+                     ->  Parallel Seq Scan on trip_by_month_2026_09 trip_by_month_1 (actual rows=14612 loops=3)
+                           Filter: (requested_at >= $1)
+                           Rows Removed by Filter: 12785
+                     ->  Parallel Seq Scan on trip_by_month_2026_10 trip_by_month_2 (actual rows=25343 loops=1)
+                           Filter: (requested_at >= $1)
+(14 rows)
+
+DEALLOCATE
+RESET
+=== D4. A query without the partition key must visit every partition (cf. scatter-gather in Part C)
+                                       QUERY PLAN                                       
+----------------------------------------------------------------------------------------
+ Aggregate
+   ->  Append
+         ->  Bitmap Heap Scan on trip_by_month_2025_10 trip_by_month_1
+               Recheck Cond: (rider_id = 25001)
+               ->  Bitmap Index Scan on trip_by_month_2025_10_rider_id_requested_at_idx
+                     Index Cond: (rider_id = 25001)
+         ->  Bitmap Heap Scan on trip_by_month_2025_11 trip_by_month_2
+               Recheck Cond: (rider_id = 25001)
+               ->  Bitmap Index Scan on trip_by_month_2025_11_rider_id_requested_at_idx
+                     Index Cond: (rider_id = 25001)
+         ->  Bitmap Heap Scan on trip_by_month_2025_12 trip_by_month_3
+               Recheck Cond: (rider_id = 25001)
+               ->  Bitmap Index Scan on trip_by_month_2025_12_rider_id_requested_at_idx
+                     Index Cond: (rider_id = 25001)
+         ->  Bitmap Heap Scan on trip_by_month_2026_01 trip_by_month_4
+               Recheck Cond: (rider_id = 25001)
+               ->  Bitmap Index Scan on trip_by_month_2026_01_rider_id_requested_at_idx
+                     Index Cond: (rider_id = 25001)
+         ->  Bitmap Heap Scan on trip_by_month_2026_02 trip_by_month_5
+               Recheck Cond: (rider_id = 25001)
+               ->  Bitmap Index Scan on trip_by_month_2026_02_rider_id_requested_at_idx
+                     Index Cond: (rider_id = 25001)
+         ->  Bitmap Heap Scan on trip_by_month_2026_03 trip_by_month_6
+               Recheck Cond: (rider_id = 25001)
+               ->  Bitmap Index Scan on trip_by_month_2026_03_rider_id_requested_at_idx
+                     Index Cond: (rider_id = 25001)
+         ->  Bitmap Heap Scan on trip_by_month_2026_04 trip_by_month_7
+               Recheck Cond: (rider_id = 25001)
+               ->  Bitmap Index Scan on trip_by_month_2026_04_rider_id_requested_at_idx
+                     Index Cond: (rider_id = 25001)
+         ->  Bitmap Heap Scan on trip_by_month_2026_05 trip_by_month_8
+               Recheck Cond: (rider_id = 25001)
+               ->  Bitmap Index Scan on trip_by_month_2026_05_rider_id_requested_at_idx
+                     Index Cond: (rider_id = 25001)
+         ->  Bitmap Heap Scan on trip_by_month_2026_06 trip_by_month_9
+               Recheck Cond: (rider_id = 25001)
+               ->  Bitmap Index Scan on trip_by_month_2026_06_rider_id_requested_at_idx
+                     Index Cond: (rider_id = 25001)
+         ->  Bitmap Heap Scan on trip_by_month_2026_07 trip_by_month_10
+               Recheck Cond: (rider_id = 25001)
+               ->  Bitmap Index Scan on trip_by_month_2026_07_rider_id_requested_at_idx
+                     Index Cond: (rider_id = 25001)
+         ->  Bitmap Heap Scan on trip_by_month_2026_08 trip_by_month_11
+               Recheck Cond: (rider_id = 25001)
+               ->  Bitmap Index Scan on trip_by_month_2026_08_rider_id_requested_at_idx
+                     Index Cond: (rider_id = 25001)
+         ->  Bitmap Heap Scan on trip_by_month_2026_09 trip_by_month_12
+               Recheck Cond: (rider_id = 25001)
+               ->  Bitmap Index Scan on trip_by_month_2026_09_rider_id_requested_at_idx
+                     Index Cond: (rider_id = 25001)
+         ->  Bitmap Heap Scan on trip_by_month_2026_10 trip_by_month_13
+               Recheck Cond: (rider_id = 25001)
+               ->  Bitmap Index Scan on trip_by_month_2026_10_rider_id_requested_at_idx
+                     Index Cond: (rider_id = 25001)
+         ->  Seq Scan on trip_by_month_default trip_by_month_14
+               Filter: (rider_id = 25001)
+(56 rows)
+
+=== D5. Archiving a month: DETACH (metadata only) vs DELETE (row by row)
+SELECT 59588
+Timing is on.
+DELETE 59588
+Time: 16.732 ms
+ALTER TABLE
+Time: 8.518 ms
+Timing is off.
+ALTER TABLE
+ rows_now_in_archive_table 
+---------------------------
+                     59588
+(1 row)
+
+ oct_2025_rows_left_in_partitioned_table 
+-----------------------------------------
+                                       0
+(1 row)
+
+DROP TABLE
