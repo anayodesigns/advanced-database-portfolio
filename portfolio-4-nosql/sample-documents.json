@@ -1,0 +1,215 @@
+{
+  "ride": {
+    "_id": 892470,
+    "type": "ride",
+    "status": "completed",
+    "category": "ECONOMY",
+    "city": "Ibadan",
+    "requested_at": {
+      "$date": "2026-08-31T23:02:15.291Z"
+    },
+    "rider": {
+      "rider_id": 41052,
+      "name": "Funmilayo Ogunleye",
+      "phone": "+2348000041052"
+    },
+    "driver": {
+      "driver_id": 4374,
+      "name": "Hauwa Obi",
+      "vehicle": {
+        "plate": "IBD-04374SM",
+        "make": "Lexus",
+        "model": "ES 350"
+      }
+    },
+    "pickup": {
+      "zone": "Bodija",
+      "location": {
+        "type": "Point",
+        "coordinates": [
+          3.905663,
+          7.438904
+        ]
+      }
+    },
+    "dropoff": {
+      "zone": "Dugbe",
+      "location": {
+        "type": "Point",
+        "coordinates": [
+          3.886914,
+          7.389647
+        ]
+      }
+    },
+    "status_history": [
+      {
+        "status": "requested",
+        "at": {
+          "$date": "2026-08-31T23:02:15.291Z"
+        }
+      },
+      {
+        "status": "accepted",
+        "at": {
+          "$date": "2026-08-31T23:03:29.001Z"
+        }
+      },
+      {
+        "status": "in_progress",
+        "at": {
+          "$date": "2026-08-31T23:13:10.028Z"
+        }
+      },
+      {
+        "status": "completed",
+        "at": {
+          "$date": "2026-09-01T00:11:52.028Z"
+        }
+      }
+    ],
+    "fare": {
+      "amount": 5940,
+      "currency": "NGN",
+      "distance_km": 22.07,
+      "duration_min": 58.7,
+      "commission": 1188
+    },
+    "payment": {
+      "method": "wallet",
+      "status": "succeeded",
+      "settled_at": {
+        "$date": "2026-09-01T00:12:52.028Z"
+      }
+    },
+    "ratings": {
+      "driver_to_rider": {
+        "score": 5
+      },
+      "rider_to_driver": {
+        "score": 5
+      }
+    }
+  },
+  "delivery": {
+    "_id": 892477,
+    "type": "delivery",
+    "status": "completed",
+    "category": "BIKE",
+    "city": "Lagos",
+    "requested_at": {
+      "$date": "2026-08-31T23:06:08.903Z"
+    },
+    "rider": {
+      "rider_id": 2132,
+      "name": "Funmilayo Onyeka",
+      "phone": "+2348000002132"
+    },
+    "driver": {
+      "driver_id": 2479,
+      "name": "Abubakar Umeh",
+      "vehicle": {
+        "plate": "LAG-02479SM",
+        "make": "Bajaj",
+        "model": "Boxer"
+      }
+    },
+    "pickup": {
+      "zone": "Maryland",
+      "location": {
+        "type": "Point",
+        "coordinates": [
+          3.374086,
+          6.5818
+        ]
+      }
+    },
+    "dropoff": {
+      "zone": "Gbagada",
+      "location": {
+        "type": "Point",
+        "coordinates": [
+          3.385437,
+          6.558044
+        ]
+      }
+    },
+    "status_history": [
+      {
+        "status": "requested",
+        "at": {
+          "$date": "2026-08-31T23:06:08.903Z"
+        }
+      },
+      {
+        "status": "accepted",
+        "at": {
+          "$date": "2026-08-31T23:09:31.213Z"
+        }
+      },
+      {
+        "status": "in_progress",
+        "at": {
+          "$date": "2026-08-31T23:14:09.982Z"
+        }
+      },
+      {
+        "status": "completed",
+        "at": {
+          "$date": "2026-08-31T23:23:45.982Z"
+        }
+      }
+    ],
+    "fare": {
+      "amount": 600,
+      "currency": "NGN",
+      "distance_km": 1.28,
+      "duration_min": 9.6,
+      "commission": 90
+    },
+    "payment": {
+      "method": "card",
+      "status": "succeeded",
+      "settled_at": {
+        "$date": "2026-08-31T23:24:45.982Z"
+      }
+    },
+    "parcel": {
+      "recipient": "Olumide Lawal",
+      "recipient_phone": "+2347000892477",
+      "size": "M",
+      "declared_value": 27000
+    }
+  },
+  "driver": {
+    "_id": 3,
+    "name": "Amarachi Suleiman",
+    "city": "Lagos",
+    "status": "approved",
+    "vehicle": {
+      "plate": "LAG-00003SM",
+      "category": "ECONOMY",
+      "make": "Hyundai",
+      "model": "Elantra",
+      "year": 2015
+    },
+    "availability": "available",
+    "location": {
+      "type": "Point",
+      "coordinates": [
+        3.5040331790123456,
+        6.6278376286008225
+      ]
+    },
+    "zone": "Ikorodu",
+    "location_updated_at": {
+      "$date": "2026-10-10T15:49:05.579Z"
+    }
+  },
+  "rider_with_referrer": {
+    "_id": 287,
+    "name": "Musa Afolabi",
+    "city": "Lagos",
+    "referred_by": 1
+  }
+}

@@ -1,0 +1,4 @@
+trips loaded:   107535  (3015 ms)
+drivers loaded: 5000
+riders loaded:  50000
+collections: ["drivers","riders","trips"]

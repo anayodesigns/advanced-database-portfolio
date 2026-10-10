@@ -1,0 +1,421 @@
+
+====================================================================================================
+0. What was loaded
+====================================================================================================
+{
+  trips: 107535,
+  drivers: 5000,
+  riders: 50000,
+  deliveries_with_parcel: 16148,
+  rides_without_parcel: 91387
+}
+
+====================================================================================================
+1. Document model: ONE read returns the whole trip (PostgreSQL needs 9 tables / 8 joins for the same view)
+====================================================================================================
+{
+  _id: 892505,
+  type: 'delivery',
+  status: 'completed',
+  category: 'BIKE',
+  city: 'Abuja',
+  requested_at: ISODate('2026-08-31T23:20:51.319Z'),
+  rider: {
+    rider_id: 27200,
+    name: 'Adaeze Okeke',
+    phone: '+2348000027200'
+  },
+  driver: {
+    driver_id: 2519,
+    name: 'Abubakar Danjuma',
+    vehicle: {
+      plate: 'ABJ-02519SM',
+      make: 'Bajaj',
+      model: 'Boxer'
+    }
+  },
+  pickup: {
+    zone: 'Maitama',
+    location: {
+      type: 'Point',
+      coordinates: [
+        7.49606,
+        9.087269
+      ]
+    }
+  },
+  dropoff: {
+    zone: 'Utako',
+    location: {
+      type: 'Point',
+      coordinates: [
+        7.449025,
+        9.072706
+      ]
+    }
+  },
+  status_history: [
+    {
+      status: 'requested',
+      at: ISODate('2026-08-31T23:20:51.319Z')
+    },
+    {
+      status: 'accepted',
+      at: ISODate('2026-08-31T23:24:07.712Z')
+    },
+    {
+      status: 'in_progress',
+      at: ISODate('2026-08-31T23:31:10.303Z')
+    },
+    {
+      status: 'completed',
+      at: ISODate('2026-09-01T00:12:22.303Z')
+    }
+  ],
+  fare: {
+    amount: 2210,
+    currency: 'NGN',
+    distance_km: 12.18,
+    duration_min: 41.2,
+    commission: 331.5
+  },
+  payment: {
+    method: 'card',
+    status: 'succeeded',
+    settled_at: ISODate('2026-09-01T00:13:22.303Z')
+  },
+  ratings: {
+    driver_to_rider: {
+      score: 4
+    },
+    rider_to_driver: {
+      score: 5
+    }
+  },
+  parcel: {
+    recipient: 'Yusuf Eze',
+    recipient_phone: '+2347000892505',
+    size: 'M',
+    declared_value: 5000
+  }
+}
+
+====================================================================================================
+2. Schema validation rejects bad documents
+====================================================================================================
+  status not in enum: REJECTED -> code 121: Document failed validation
+      why: {"operatorName":"$and","clausesNotSatisfied":[{"index":0,"details":{"operatorName":"$jsonSchema","schemaRulesNotSatisfied":[{"operatorName":"properties","propertiesNotSatisfied":[{"propertyName":"status","details":[{"operatorName":"enum","specifiedAs":{"enum":["requested","accepted","in_progress","completed","cancelled"]},"reason":"value was not found in enum","consideredValue":"teleported"}]}]}]}
+  completed trip without driver/fare (business rule): REJECTED -> code 121: Document failed validation
+      why: {"operatorName":"$and","clausesNotSatisfied":[{"index":1,"details":{"operatorName":"$or","clausesNotSatisfied":[{"index":0,"details":{"operatorName":"$ne","specifiedAs":{"status":{"$ne":"completed"}},"reason":"comparison succeeded","consideredValue":"completed"}},{"index":1,"details":{"operatorName":"$and","clausesNotSatisfied":[{"index":0,"details":{"operatorName":"$exists","specifiedAs":{"driver
+
+====================================================================================================
+3. Indexing: rider trip history — COLLSCAN vs compound index (same query as Postgres Q1)
+====================================================================================================
+  rider 1 has 155 trips in this collection
+  BEFORE:
+{
+  plan: 'PROJECTION_DEFAULT <- SORT <- COLLSCAN',
+  nReturned: 20,
+  totalKeysExamined: 0,
+  totalDocsExamined: 107535,
+  executionTimeMillis: 25
+}
+  AFTER createIndex({'rider.rider_id': 1, requested_at: -1}):
+{
+  plan: 'LIMIT <- PROJECTION_DEFAULT <- FETCH <- IXSCAN(rider_history)',
+  nReturned: 20,
+  totalKeysExamined: 20,
+  totalDocsExamined: 20,
+  executionTimeMillis: 1
+}
+  first 3 results:
+{
+  _id: 999668,
+  status: 'requested',
+  requested_at: ISODate('2026-10-10T02:05:34.864Z'),
+  pickup: {
+    zone: 'Surulere'
+  }
+}
+{
+  _id: 998595,
+  status: 'completed',
+  requested_at: ISODate('2026-10-09T16:41:43.761Z'),
+  pickup: {
+    zone: 'Surulere'
+  },
+  fare: {
+    amount: 2780
+  }
+}
+{
+  _id: 997174,
+  status: 'completed',
+  requested_at: ISODate('2026-10-09T04:14:56.123Z'),
+  pickup: {
+    zone: 'Sangotedo'
+  },
+  fare: {
+    amount: 2480
+  }
+}
+
+====================================================================================================
+4. Geospatial: 5 nearest AVAILABLE ECONOMY drivers within 3 km of a pickup in Lekki Phase 1
+====================================================================================================
+{
+  _id: 1566,
+  name: 'Nkechi Chukwu',
+  vehicle: {
+    plate: 'LAG-01566SM'
+  },
+  zone: 'Lekki Phase 1',
+  distance_m: 225
+}
+{
+  _id: 2493,
+  name: 'Bashir Suleiman',
+  vehicle: {
+    plate: 'LAG-02493SM'
+  },
+  zone: 'Lekki Phase 1',
+  distance_m: 278
+}
+{
+  _id: 1796,
+  name: 'Temitope Ojo',
+  vehicle: {
+    plate: 'LAG-01796SM'
+  },
+  zone: 'Lekki Phase 1',
+  distance_m: 554
+}
+{
+  _id: 1341,
+  name: 'Olumide Garba',
+  vehicle: {
+    plate: 'LAG-01341SM'
+  },
+  zone: 'Lekki Phase 1',
+  distance_m: 623
+}
+{
+  _id: 2254,
+  name: 'Hauwa Nwosu',
+  vehicle: {
+    plate: 'LAG-02254SM'
+  },
+  zone: 'Lekki Phase 1',
+  distance_m: 637
+}
+  explain:
+{
+  plan: 'LIMIT <- GEO_NEAR_2DSPHERE(geo_dispatch) <- FETCH <- IXSCAN(geo_dispatch)',
+  nReturned: 5,
+  totalKeysExamined: 61,
+  totalDocsExamined: 16,
+  executionTimeMillis: 0
+}
+  (5000 drivers in total; the 2dsphere index limits the search to nearby cells)
+
+====================================================================================================
+5. Atomic single-document update: a driver accepts a requested trip (only if still requested)
+====================================================================================================
+  first dispatcher:
+{
+  _id: 999402,
+  status: 'accepted',
+  status_history: [
+    {
+      status: 'requested',
+      at: ISODate('2026-10-09T23:46:02.137Z')
+    },
+    {
+      status: 'accepted',
+      at: ISODate('2026-10-10T15:52:45.821Z')
+    }
+  ],
+  driver: {
+    driver_id: 7
+  }
+}
+  second dispatcher (same trip, a moment later):
+null
+  -> null: the filter no longer matches, so the second accept is a no-op (no double assignment).
+
+====================================================================================================
+6. Aggregation pipeline: top 5 Lagos drivers by earnings, last 30 days (net of commission)
+====================================================================================================
+{
+  _id: 2060,
+  name: 'Ifeoma Ibrahim',
+  trips: 18,
+  gross: 133010,
+  net: 109068.2,
+  rating: 4.19
+}
+{
+  _id: 578,
+  name: 'Ada Usman',
+  trips: 24,
+  gross: 137440,
+  net: 107203.2,
+  rating: 4.5
+}
+{
+  _id: 2468,
+  name: 'Fatima Usman',
+  trips: 25,
+  gross: 133220,
+  net: 103911.6,
+  rating: 4.88
+}
+{
+  _id: 437,
+  name: 'Ibrahim Lawal',
+  trips: 23,
+  gross: 132690,
+  net: 103498.2,
+  rating: 4.74
+}
+{
+  _id: 848,
+  name: 'Zainab Usman',
+  trips: 24,
+  gross: 130890,
+  net: 102094.2,
+  rating: 4.47
+}
+
+====================================================================================================
+6b. Aggregation: demand heat-map — busiest pickup zone per city and payment-method mix ($facet)
+====================================================================================================
+{
+  busiest_zone_per_city: [
+    {
+      _id: 'Lagos',
+      zone: 'Gbagada',
+      requests: 2804
+    },
+    {
+      _id: 'Abuja',
+      zone: 'Maitama',
+      requests: 2216
+    },
+    {
+      _id: 'Port Harcourt',
+      zone: 'Ada George',
+      requests: 1344
+    },
+    {
+      _id: 'Ibadan',
+      zone: 'Bodija',
+      requests: 1107
+    },
+    {
+      _id: 'Kano',
+      zone: 'Fagge',
+      requests: 924
+    }
+  ],
+  payment_mix: [
+    {
+      _id: 'wallet',
+      n: 38457
+    },
+    {
+      _id: 'card',
+      n: 38416
+    },
+    {
+      _id: 'cash',
+      n: 19296
+    }
+  ]
+}
+
+====================================================================================================
+7. Key-value pattern with TTL: driver presence heartbeats (key = 'driver:<id>')
+====================================================================================================
+  GET driver:4999 ->
+{
+  _id: 'driver:4999',
+  last_seen: ISODate('2026-10-10T15:52:46.059Z'),
+  loc: [
+    8.52,
+    11.98
+  ],
+  app_version: '5.2.1'
+}
+  keys now: ["driver:4999","driver:1743","driver:0069"]
+  PUT (upsert) refreshes a heartbeat:
+  waiting 65 s for the TTL monitor (runs every 60 s); drivers 4999 and 1743 keep sending a heartbeat every 10 s...
+  keys after 65 s: ["driver:4999","driver:1743"]
+  -> the driver that stopped sending heartbeats (driver:0069) expired automatically; live drivers stay. No cron job needed.
+
+====================================================================================================
+8. Graph pattern: referral network with $graphLookup
+====================================================================================================
+  top ambassador: rider 16 with 244 direct referrals
+{
+  _id: 16,
+  name: 'Ebuka Fashola',
+  city: 'Lagos',
+  network_size: 784,
+  by_depth: [
+    {
+      depth: 1,
+      riders: 244
+    },
+    {
+      depth: 2,
+      riders: 329
+    },
+    {
+      depth: 3,
+      riders: 136
+    },
+    {
+      depth: 4,
+      riders: 75
+    }
+  ]
+}
+  upline (who invited whom) for rider 20001:
+{
+  _id: 20001,
+  name: 'Ibrahim Okonkwo',
+  chain: [
+    {
+      rider: 17540,
+      name: 'Ifeoma Okeke',
+      hops: Long('1')
+    },
+    {
+      rider: 18,
+      name: 'Aisha Aliyu',
+      hops: Long('2')
+    },
+    {
+      rider: 17,
+      name: 'Kunle Afolabi',
+      hops: Long('3')
+    },
+    {
+      rider: 7,
+      name: 'Musa Adeyemi',
+      hops: Long('4')
+    }
+  ]
+}
+
+====================================================================================================
+9. Storage footprint vs PostgreSQL
+====================================================================================================
+{
+  documents: 107535,
+  avg_document_bytes: 914,
+  data_MB: 93.8,
+  on_disk_compressed_MB: 26.2,
+  index_MB: 2.7
+}
